@@ -3,22 +3,22 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
 const WP_API = 'https://public-api.wordpress.com/wp/v2/sites/250024892';
 
-const PILLARS: Record<string, { name: string; tagline: string }> = {
-  'health-and-comfort':   { name: 'Health & Comfort',   tagline: 'Practical steps that make life easier and more comfortable.' },
-  'money-and-lifestyle':  { name: 'Money & Lifestyle',   tagline: 'Straightforward explanations, smarter financial choices.' },
-  'community-and-purpose':{ name: 'Community & Purpose', tagline: 'Connection, contribution, and staying meaningfully involved.' },
-  'home-and-design':      { name: 'Home & Design',       tagline: 'Guides to make your home simple, calm, and right for you.' },
-  'style-and-wellbeing':  { name: 'Style & Wellbeing',   tagline: 'A modern approach to living well and expressing personal style.' },
-};
-
 export async function getStaticPaths() {
-  return Object.keys(PILLARS).map(slug => ({ params: { pillar: slug } }));
+  const PILLARS = {
+    'health-and-comfort':    { name: 'Health & Comfort',   tagline: 'Practical steps that make life easier and more comfortable.' },
+    'money-and-lifestyle':   { name: 'Money & Lifestyle',  tagline: 'Straightforward explanations, smarter financial choices.' },
+    'community-and-purpose': { name: 'Community & Purpose',tagline: 'Connection, contribution, and staying meaningfully involved.' },
+    'home-and-design':       { name: 'Home & Design',      tagline: 'Guides to make your home simple, calm, and right for you.' },
+    'style-and-wellbeing':   { name: 'Style & Wellbeing',  tagline: 'A modern approach to living well and expressing personal style.' },
+  };
+  return Object.entries(PILLARS).map(([slug, meta]) => ({
+    params: { pillar: slug },
+    props: { meta },
+  }));
 }
 
 const { pillar } = Astro.params;
-const meta = PILLARS[pillar];
-
-if (!meta) return Astro.redirect('/404');
+const { meta } = Astro.props;
 
 let posts: any[] = [];
 try {
