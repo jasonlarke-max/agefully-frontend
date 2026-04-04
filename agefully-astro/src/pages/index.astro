@@ -1,0 +1,283 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const WP_API = 'https://public-api.wordpress.com/wp/v2/sites/250024892';
+
+const PILLARS = [
+  { name: 'Health & Comfort', slug: 'health-and-comfort', tagline: 'Practical steps that make life easier and more comfortable.' },
+  { name: 'Money & Lifestyle', slug: 'money-and-lifestyle', tagline: 'Straightforward explanations, smarter financial choices.' },
+  { name: 'Community & Purpose', slug: 'community-and-purpose', tagline: 'Connection, contribution, and staying meaningfully involved.' },
+  { name: 'Home & Design', slug: 'home-and-design', tagline: 'Guides to make your home simple, calm, and right for you.' },
+  { name: 'Style & Wellbeing', slug: 'style-and-wellbeing', tagline: 'A modern approach to living well and expressing personal style.' },
+];
+
+let posts = [];
+try {
+  const res = await fetch(`${WP_API}/posts?per_page=6&status=publish&_fields=id,slug,title,excerpt,date,categories,_links,_embedded&_embed=1`);
+  if (res.ok) {
+    posts = await res.json();
+  }
+} catch (e) {
+  // API unavailable at build time — homepage renders without posts
+}
+
+let categories = [];
+try {
+  const res = await fetch(`${WP_API}/categories?per_page=50&_fields=id,name,slug`);
+  if (res.ok) {
+    categories = await res.json();
+  }
+} catch (e) {}
+
+function getPillarName(post: any) {
+  if (!post.categories?.length || !categories.length) return null;
+  const cat = categories.find((c: any) => post.categories.includes(c.id));
+  return cat?.name ?? null;
+}
+
+function getFeaturedImage(post: any) {
+  try {
+    return post._embedded?.['wp:featuredmedia']?.[0]?.source_url ?? null;
+  } catch { return null; }
+}
+---
+
+<BaseLayout title="Clarity for Later Life">
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero__inner">
+      <p class="hero__eyebrow">For adults over 60</p>
+      <h1 class="hero__heading">Clarity for Later Life.</h1>
+      <p class="hero__sub">Practical, independent guidance on the decisions that matter most — sourced honestly, delivered clearly, free from noise.</p>
+    </div>
+  </section>
+
+  <!-- Pillars -->
+  <section class="pillars">
+    <div class="container">
+      <p class="section-label">Five areas of focus</p>
+      <div class="pillars__grid">
+        {PILLARS.map(p => (
+          <a href={`/pillar/${p.slug}`} class="pillar-card">
+            <span class="pillar-card__name">{p.name}</span>
+            <span class="pillar-card__tagline">{p.tagline}</span>
+            <span class="pillar-card__arrow" aria-hidden="true">&#8594;</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Latest articles -->
+  <section class="latest">
+    <div class="container">
+      <div class="latest__header">
+        <p class="section-label">Latest reads</p>
+      </div>
+      {posts.length > 0 ? (
+        <div class="articles-grid">
+          {posts.map((post: any) => {
+            const pillar = getPillarName(post);
+            const img = getFeaturedImage(post);
+            const excerpt = post.excerpt?.rendered?.replace(/<[^>]+>/g, '').trim() ?? '';
+            return (
+              <a href={`/${post.slug}`} class="article-card">
+                {img
+                  ? <img src={img} alt="" class="article-card__img" loading="lazy" />
+                  : <div class="article-card__img-placeholder" />
+                }
+                <div class="article-card__body">
+                  {pillar && <span class="article-card__pillar">{pillar}</span>}
+                  <h2 class="article-card__title" set:html={post.title.rendered} />
+                  {excerpt && <p class="article-card__excerpt">{excerpt.slice(0, 140)}{excerpt.length > 140 ? '…' : ''}</p>}
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      ) : (
+        <p class="no-posts">Articles coming soon.</p>
+      )}
+    </div>
+  </section>
+
+  <!-- Trust strip -->
+  <section class="trust-strip">
+    <div class="prose-container">
+      <p class="trust-strip__text">Agefully earns a small commission when readers buy through links in our articles. A committed proportion supports Age UK Norwich. This does not affect our recommendations. <a href="/the-agefully-model">How The Agefully Model works &rarr;</a></p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+/* Hero */
+.hero {
+  background: var(--teal);
+  padding: 6rem 1.5rem 5rem;
+}
+
+.hero__inner {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.hero__eyebrow {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(249,245,242,0.6);
+  margin-bottom: 1rem;
+}
+
+.hero__heading {
+  font-family: var(--font-head);
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  font-weight: 300;
+  color: var(--cream);
+  line-height: 1.1;
+  margin-bottom: 1.25rem;
+}
+
+.hero__sub {
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  font-weight: 300;
+  color: rgba(249,245,242,0.8);
+  line-height: 1.6;
+  max-width: 560px;
+}
+
+/* Section label */
+.section-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 1.5rem;
+}
+
+/* Pillars */
+.pillars {
+  padding: 4rem 0 3rem;
+  border-bottom: 1px solid var(--teal-border);
+}
+
+.pillars__grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1px;
+  border: 1px solid var(--teal-border);
+  background: var(--teal-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.pillar-card {
+  background: var(--cream);
+  padding: 1.5rem 1.25rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: background 0.15s;
+  text-decoration: none;
+}
+
+.pillar-card:hover {
+  background: var(--white);
+  text-decoration: none;
+}
+
+.pillar-card__name {
+  font-family: var(--font-head);
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--teal);
+  line-height: 1.3;
+}
+
+.pillar-card__tagline {
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+  line-height: 1.5;
+  flex: 1;
+}
+
+.pillar-card__arrow {
+  font-size: 1rem;
+  color: var(--teal);
+  margin-top: 0.25rem;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.pillar-card:hover .pillar-card__arrow {
+  opacity: 1;
+}
+
+/* Latest */
+.latest {
+  padding: 4rem 0;
+}
+
+.articles-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.article-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.article-card:hover {
+  text-decoration: none;
+}
+
+.no-posts {
+  color: var(--ink-muted);
+  font-style: italic;
+}
+
+/* Trust strip */
+.trust-strip {
+  padding: 2rem 0;
+  border-top: 1px solid var(--teal-border);
+}
+
+.trust-strip__text {
+  font-size: 0.8125rem;
+  color: var(--ink-faint);
+  line-height: 1.6;
+}
+
+.trust-strip__text a {
+  color: var(--teal);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .pillars__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .articles-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .pillars__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .articles-grid {
+    grid-template-columns: 1fr;
+  }
+  .hero {
+    padding: 4rem 1.5rem 3.5rem;
+  }
+}
+</style>

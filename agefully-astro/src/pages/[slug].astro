@@ -1,0 +1,208 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const WP_API = 'https://public-api.wordpress.com/wp/v2/sites/250024892';
+
+export async function getStaticPaths() {
+  try {
+    const res = await fetch(`${WP_API}/posts?per_page=100&status=publish&_fields=slug`);
+    if (!res.ok) return [];
+    const posts = await res.json();
+    return posts.map((p: any) => ({ params: { slug: p.slug } }));
+  } catch {
+    return [];
+  }
+}
+
+const { slug } = Astro.params;
+
+let post: any = null;
+let categories: any[] = [];
+
+try {
+  const [postRes, catRes] = await Promise.all([
+    fetch(`${WP_API}/posts?slug=${slug}&status=publish&_embed=1`),
+    fetch(`${WP_API}/categories?per_page=50&_fields=id,name,slug`),
+  ]);
+  if (postRes.ok) {
+    const data = await postRes.json();
+    post = data[0] ?? null;
+  }
+  if (catRes.ok) categories = await catRes.json();
+} catch {}
+
+if (!post) {
+  return Astro.redirect('/404');
+}
+
+const title = post.title?.rendered?.replace(/<[^>]+>/g, '') ?? '';
+const description = post.excerpt?.rendered?.replace(/<[^>]+>/g, '').trim().slice(0, 155) ?? '';
+const featuredImage = post._embedded?.['wp:featuredmedia']?.[0]?.source_url ?? null;
+const datePublished = new Date(post.date);
+const dateFormatted = datePublished.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+const pillar = categories.find((c: any) => post.categories?.includes(c.id));
+---
+
+<BaseLayout title={title} description={description} image={featuredImage ?? undefined}>
+  <article class="article">
+
+    <!-- Header -->
+    <div class="article__header">
+      <div class="prose-container">
+        {pillar && (
+          <a href={`/pillar/${pillar.slug}`} class="article__pillar">{pillar.name}</a>
+        )}
+        <h1 class="article__title" set:html={post.title.rendered} />
+        <div class="article__meta">
+          <time datetime={post.date}>{dateFormatted}</time>
+        </div>
+      </div>
+    </div>
+
+    <!-- Featured image -->
+    {featuredImage && (
+      <div class="article__feature-img">
+        <div class="container">
+          <img src={featuredImage} alt="" loading="eager" />
+        </div>
+      </div>
+    )}
+
+    <!-- Body -->
+    <div class="article__body prose-container">
+      <div class="article__content" set:html={post.content.rendered} />
+    </div>
+
+  </article>
+</BaseLayout>
+
+<style>
+.article {
+  padding-bottom: var(--space-xl);
+}
+
+.article__header {
+  background: var(--teal);
+  padding: 4rem 1.5rem 3rem;
+  margin-bottom: 0;
+}
+
+.article__pillar {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(249,245,242,0.65);
+  margin-bottom: 1rem;
+  text-decoration: none;
+}
+
+.article__pillar:hover {
+  color: var(--cream);
+  text-decoration: none;
+}
+
+.article__title {
+  font-family: var(--font-head);
+  font-size: clamp(1.75rem, 4vw, 2.75rem);
+  font-weight: 300;
+  color: var(--cream);
+  line-height: 1.2;
+  margin-bottom: 1rem;
+}
+
+.article__meta {
+  font-size: 0.8125rem;
+  color: rgba(249,245,242,0.5);
+  font-weight: 400;
+}
+
+.article__feature-img {
+  margin-bottom: var(--space-md);
+  margin-top: 0;
+}
+
+.article__feature-img img {
+  width: 100%;
+  max-height: 480px;
+  object-fit: cover;
+  border-radius: 0 0 4px 4px;
+}
+
+.article__body {
+  padding-top: var(--space-md);
+}
+
+/* Article content typography */
+.article__content {
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  color: var(--ink);
+}
+
+.article__content h2 {
+  font-family: var(--font-head);
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: var(--teal);
+  margin: 2.5rem 0 0.75rem;
+}
+
+.article__content h3 {
+  font-family: var(--font-head);
+  font-size: 1.1875rem;
+  font-weight: 400;
+  color: var(--ink);
+  margin: 2rem 0 0.5rem;
+}
+
+.article__content p {
+  margin-bottom: 1.25rem;
+}
+
+.article__content ul,
+.article__content ol {
+  margin: 0 0 1.25rem 1.5rem;
+}
+
+.article__content li {
+  margin-bottom: 0.4rem;
+}
+
+.article__content a {
+  color: var(--teal);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.article__content strong {
+  font-weight: 600;
+}
+
+.article__content em {
+  font-style: italic;
+}
+
+/* Affiliate disclosure — WordPress adds this as first paragraph with specific class */
+.article__content .affiliate-disclosure,
+.article__content p:first-child:has(em) {
+  font-size: 0.8125rem;
+  color: var(--ink-faint);
+  background: var(--teal-muted);
+  border-left: 2px solid var(--teal);
+  padding: 0.75rem 1rem;
+  border-radius: 0 2px 2px 0;
+  margin-bottom: 2rem;
+}
+
+/* Disclaimer sign-off lines */
+.article__content p:last-child:has(em) {
+  font-size: 0.875rem;
+  color: var(--ink-faint);
+  border-top: 1px solid var(--teal-border);
+  padding-top: 1.25rem;
+  margin-top: 2rem;
+}
+</style>

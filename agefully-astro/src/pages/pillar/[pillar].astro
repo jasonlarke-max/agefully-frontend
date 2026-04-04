@@ -1,0 +1,141 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const WP_API = 'https://public-api.wordpress.com/wp/v2/sites/250024892';
+
+const PILLARS: Record<string, { name: string; tagline: string }> = {
+  'health-and-comfort':   { name: 'Health & Comfort',   tagline: 'Practical steps that make life easier and more comfortable.' },
+  'money-and-lifestyle':  { name: 'Money & Lifestyle',   tagline: 'Straightforward explanations, smarter financial choices.' },
+  'community-and-purpose':{ name: 'Community & Purpose', tagline: 'Connection, contribution, and staying meaningfully involved.' },
+  'home-and-design':      { name: 'Home & Design',       tagline: 'Guides to make your home simple, calm, and right for you.' },
+  'style-and-wellbeing':  { name: 'Style & Wellbeing',   tagline: 'A modern approach to living well and expressing personal style.' },
+};
+
+export async function getStaticPaths() {
+  return Object.keys(PILLARS).map(slug => ({ params: { pillar: slug } }));
+}
+
+const { pillar } = Astro.params;
+const meta = PILLARS[pillar];
+
+if (!meta) return Astro.redirect('/404');
+
+let posts: any[] = [];
+try {
+  // Get category ID by slug, then fetch posts
+  const catRes = await fetch(`${WP_API}/categories?slug=${pillar}&_fields=id,name,slug`);
+  if (catRes.ok) {
+    const cats = await catRes.json();
+    if (cats[0]?.id) {
+      const postsRes = await fetch(`${WP_API}/posts?categories=${cats[0].id}&per_page=24&status=publish&_embed=1`);
+      if (postsRes.ok) posts = await postsRes.json();
+    }
+  }
+} catch {}
+
+function getFeaturedImage(post: any) {
+  try {
+    return post._embedded?.['wp:featuredmedia']?.[0]?.source_url ?? null;
+  } catch { return null; }
+}
+---
+
+<BaseLayout title={meta.name} description={`${meta.tagline} Read all Agefully articles in ${meta.name}.`}>
+
+  <!-- Header -->
+  <div class="pillar-header">
+    <div class="prose-container">
+      <p class="pillar-header__label">Pillar</p>
+      <h1 class="pillar-header__title">{meta.name}</h1>
+      <p class="pillar-header__tagline">{meta.tagline}</p>
+    </div>
+  </div>
+
+  <!-- Articles -->
+  <section class="pillar-articles">
+    <div class="container">
+      {posts.length > 0 ? (
+        <div class="articles-grid">
+          {posts.map((post: any) => {
+            const img = getFeaturedImage(post);
+            const excerpt = post.excerpt?.rendered?.replace(/<[^>]+>/g, '').trim() ?? '';
+            return (
+              <a href={`/${post.slug}`} class="article-card">
+                {img
+                  ? <img src={img} alt="" class="article-card__img" loading="lazy" />
+                  : <div class="article-card__img-placeholder" />
+                }
+                <div class="article-card__body">
+                  <span class="article-card__pillar">{meta.name}</span>
+                  <h2 class="article-card__title" set:html={post.title.rendered} />
+                  {excerpt && <p class="article-card__excerpt">{excerpt.slice(0, 140)}{excerpt.length > 140 ? '…' : ''}</p>}
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      ) : (
+        <div class="empty-state">
+          <p>Articles in this pillar coming soon.</p>
+        </div>
+      )}
+    </div>
+  </section>
+
+</BaseLayout>
+
+<style>
+.pillar-header {
+  background: var(--teal);
+  padding: 4rem 1.5rem 3.5rem;
+  margin-bottom: var(--space-md);
+}
+
+.pillar-header__label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(249,245,242,0.5);
+  margin-bottom: 0.75rem;
+}
+
+.pillar-header__title {
+  font-family: var(--font-head);
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 300;
+  color: var(--cream);
+  line-height: 1.15;
+  margin-bottom: 0.75rem;
+}
+
+.pillar-header__tagline {
+  font-size: 1.0625rem;
+  color: rgba(249,245,242,0.75);
+  font-weight: 300;
+  max-width: 500px;
+}
+
+.pillar-articles {
+  padding-bottom: var(--space-xl);
+}
+
+.articles-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.empty-state {
+  padding: var(--space-lg) 0;
+  color: var(--ink-muted);
+  font-style: italic;
+}
+
+@media (max-width: 900px) {
+  .articles-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .articles-grid { grid-template-columns: 1fr; }
+}
+</style>
