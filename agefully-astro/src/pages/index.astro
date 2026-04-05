@@ -4,11 +4,41 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 const WP_API = 'https://public-api.wordpress.com/wp/v2/sites/250024892';
 
 const PILLARS = [
-  { name: 'Health & Comfort',    slug: 'health-and-comfort',    tagline: 'Practical steps that make life easier and more comfortable.', num: '01' },
-  { name: 'Money & Lifestyle',   slug: 'money-and-lifestyle',   tagline: 'Straightforward explanations, smarter financial choices.',     num: '02' },
-  { name: 'Community & Purpose', slug: 'community-and-purpose', tagline: 'Connection, contribution, and staying meaningfully involved.',  num: '03' },
-  { name: 'Home & Design',       slug: 'home-and-design',       tagline: 'Guides to make your home simple, calm, and right for you.',    num: '04' },
-  { name: 'Style & Wellbeing',   slug: 'style-and-wellbeing',   tagline: 'A modern approach to living well and expressing personal style.', num: '05' },
+  {
+    name: 'Health & Comfort',
+    slug: 'health-and-comfort',
+    tagline: 'Practical steps that make life easier and more comfortable.',
+    num: '01',
+    image: 'https://agefully.co.uk/wp-content/uploads/2025/12/Gemini_Generated_Image_wpd6prwpd6prwpd6.png',
+  },
+  {
+    name: 'Money & Lifestyle',
+    slug: 'money-and-lifestyle',
+    tagline: 'Straightforward explanations, smarter financial choices.',
+    num: '02',
+    image: 'https://agefully.co.uk/wp-content/uploads/2025/11/Money-and-LIfestyle-.jpg',
+  },
+  {
+    name: 'Community & Purpose',
+    slug: 'community-and-purpose',
+    tagline: 'Connection, contribution, and staying meaningfully involved.',
+    num: '03',
+    image: 'https://agefully.co.uk/wp-content/uploads/2025/12/community-people.jpg',
+  },
+  {
+    name: 'Home & Design',
+    slug: 'home-and-design',
+    tagline: 'Guides to make your home simple, calm, and right for you.',
+    num: '04',
+    image: 'https://agefully.co.uk/wp-content/uploads/2025/12/Gemini_Generated_Image_oe8pg2oe8pg2oe8p-1-e1765548316862.png',
+  },
+  {
+    name: 'Style & Wellbeing',
+    slug: 'style-and-wellbeing',
+    tagline: 'A modern approach to living well and expressing personal style.',
+    num: '05',
+    image: 'https://agefully.co.uk/wp-content/uploads/2025/12/Gemini_Generated_Image_g4z433g4z433g4z4.png',
+  },
 ];
 
 let categories = [];
@@ -62,7 +92,11 @@ function getFeaturedImage(post: any) {
       <p class="section-label">Five areas of focus</p>
       <div class="pillars__grid">
         {PILLARS.map(p => (
-          <a href={`/pillar/${p.slug}`} class="pillar-card">
+          <a
+            href={`/pillar/${p.slug}`}
+            class="pillar-card"
+            style={`--card-img: url('${p.image}')`}
+          >
             <span class="pillar-card__num">{p.num}</span>
             <span class="pillar-card__name">{p.name}</span>
             <span class="pillar-card__tagline">{p.tagline}</span>
@@ -201,19 +235,26 @@ function getFeaturedImage(post: any) {
 }
 
 .pillar-card {
-  background: var(--cream);
+  /* Background image with teal overlay via CSS custom property */
+  background-image:
+    linear-gradient(rgba(24,77,87,0.72), rgba(24,77,87,0.72)),
+    var(--card-img, linear-gradient(var(--teal), var(--teal)));
+  background-size: cover;
+  background-position: center;
   padding: 1.5rem 1.25rem 1.75rem;
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
   text-decoration: none;
-  min-height: 210px;
-  border-top: 3px solid var(--teal);
-  transition: background 0.2s ease;
+  min-height: 240px;
+  transition: background-image 0.2s ease;
 }
 
 .pillar-card:hover {
-  background: var(--teal);
+  /* Lift overlay on hover to reveal more of the image */
+  background-image:
+    linear-gradient(rgba(24,77,87,0.55), rgba(24,77,87,0.55)),
+    var(--card-img, linear-gradient(var(--teal), var(--teal)));
   text-decoration: none;
 }
 
@@ -222,39 +263,35 @@ function getFeaturedImage(post: any) {
   font-size: 0.65rem;
   font-weight: 600;
   letter-spacing: 0.1em;
-  color: rgba(24,77,87,0.35);
-  transition: color 0.2s;
+  color: rgba(249,245,242,0.45);
 }
 
 .pillar-card__name {
   font-family: var(--font-head);
   font-size: 1rem;
   font-weight: 400;
-  color: var(--teal);
+  color: var(--cream);
   line-height: 1.3;
-  transition: color 0.2s;
 }
 
 .pillar-card__tagline {
   font-size: 0.8125rem;
-  color: var(--ink-muted);
+  color: rgba(249,245,242,0.72);
   line-height: 1.55;
   flex: 1;
-  transition: color 0.2s;
 }
 
 .pillar-card__arrow {
   font-size: 1rem;
-  color: var(--teal);
+  color: var(--cream);
   margin-top: 0.5rem;
   opacity: 0;
-  transition: opacity 0.2s, color 0.2s;
+  transition: opacity 0.2s;
 }
 
-.pillar-card:hover .pillar-card__num     { color: rgba(249,245,242,0.4); }
-.pillar-card:hover .pillar-card__name    { color: var(--cream); }
-.pillar-card:hover .pillar-card__tagline { color: rgba(249,245,242,0.7); }
-.pillar-card:hover .pillar-card__arrow   { opacity: 1; color: var(--cream); }
+.pillar-card:hover .pillar-card__arrow {
+  opacity: 1;
+}
 
 /* ── Featured article ─────────────────── */
 .featured {
