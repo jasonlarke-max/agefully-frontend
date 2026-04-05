@@ -97,10 +97,12 @@ function getFeaturedImage(post: any) {
             class="pillar-card"
             style={`--card-img: url('${p.image}')`}
           >
-            <span class="pillar-card__num">{p.num}</span>
-            <span class="pillar-card__name">{p.name}</span>
-            <span class="pillar-card__tagline">{p.tagline}</span>
-            <span class="pillar-card__arrow" aria-hidden="true">&#8594;</span>
+            <div class="pillar-card__content">
+              <span class="pillar-card__num">{p.num}</span>
+              <span class="pillar-card__name">{p.name}</span>
+              <span class="pillar-card__tagline">{p.tagline}</span>
+              <span class="pillar-card__arrow" aria-hidden="true">&#8594;</span>
+            </div>
           </a>
         ))}
       </div>
@@ -234,28 +236,48 @@ function getFeaturedImage(post: any) {
   overflow: hidden;
 }
 
+/* Pillar card: full image top, gradient to teal at bottom, text in lower third */
 .pillar-card {
-  /* Background image with teal overlay via CSS custom property */
+  display: block;
+  position: relative;
+  min-height: 320px;
   background-image:
-    linear-gradient(rgba(24,77,87,0.72), rgba(24,77,87,0.72)),
+    linear-gradient(to bottom,
+      transparent 0%,
+      transparent 35%,
+      rgba(24,77,87,0.65) 60%,
+      rgba(24,77,87,0.96) 100%
+    ),
     var(--card-img, linear-gradient(var(--teal), var(--teal)));
   background-size: cover;
-  background-position: center;
-  padding: 1.5rem 1.25rem 1.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+  background-position: center top;
   text-decoration: none;
-  min-height: 240px;
-  transition: background-image 0.2s ease;
+  overflow: hidden;
+  transition: background-image 0.3s ease;
 }
 
 .pillar-card:hover {
-  /* Lift overlay on hover to reveal more of the image */
   background-image:
-    linear-gradient(rgba(24,77,87,0.55), rgba(24,77,87,0.55)),
+    linear-gradient(to bottom,
+      transparent 0%,
+      transparent 25%,
+      rgba(24,77,87,0.55) 55%,
+      rgba(24,77,87,0.92) 100%
+    ),
     var(--card-img, linear-gradient(var(--teal), var(--teal)));
   text-decoration: none;
+}
+
+/* Text content anchored to bottom */
+.pillar-card__content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 1.5rem 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
 
 .pillar-card__num {
@@ -277,14 +299,13 @@ function getFeaturedImage(post: any) {
 .pillar-card__tagline {
   font-size: 0.8125rem;
   color: rgba(249,245,242,0.72);
-  line-height: 1.55;
-  flex: 1;
+  line-height: 1.5;
 }
 
 .pillar-card__arrow {
-  font-size: 1rem;
+  font-size: 0.9rem;
   color: var(--cream);
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
   opacity: 0;
   transition: opacity 0.2s;
 }
@@ -456,6 +477,9 @@ function getFeaturedImage(post: any) {
 @media (max-width: 640px) {
   .pillars__grid {
     grid-template-columns: 1fr 1fr;
+  }
+  .pillar-card {
+    min-height: 240px;
   }
   .hero {
     min-height: 55vh;
