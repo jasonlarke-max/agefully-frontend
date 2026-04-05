@@ -45,13 +45,17 @@ const pillars = [
     <!-- Klaviyo -->
     <script async type="text/javascript" src="https://static.klaviyo.com/onsite/js/klaviyo.js?company_id=Yjpm8D"></script>
 
-    <!-- Suppress Klaviyo floating tab/pill — popup is scroll-triggered below -->
+    <!-- Suppress Klaviyo floating/injected popups.
+         Injected forms land as direct children of <body>.
+         Our inline form is nested inside .klaviyo-signup so it's unaffected. -->
     <style>
-      .klaviyo-tab-footer,
-      #klaviyo-tab-footer,
-      [id^="klaviyo_tab_"],
-      [class^="klaviyo_tab_"],
-      [data-form-type="tab"] {
+      body > [class*="klaviyo"],
+      body > [id*="klaviyo"],
+      [class*="klaviyo-form"][style*="position: fixed"],
+      [class*="klaviyo-form"][style*="position:fixed"],
+      [data-form-type="tab"],
+      [data-form-type="popup"],
+      [data-form-type="flyout"] {
         display: none !important;
       }
     </style>
