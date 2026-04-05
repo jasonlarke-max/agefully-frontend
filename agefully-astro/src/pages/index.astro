@@ -144,12 +144,9 @@ function getFeaturedImage(post: any) {
     </div>
   </section>
 
-  <!-- Email signup -->
+  <!-- Email signup — heading removed, Klaviyo provides its own -->
   <section class="email-signup">
     <div class="prose-container">
-      <p class="section-label">Stay informed</p>
-      <h2 class="email-signup__heading">Practical guidance, delivered clearly.</h2>
-      <p class="email-signup__sub">One email when something is worth your time. No filler.</p>
       <div class="klaviyo-form-Ub73z8"></div>
     </div>
   </section>
@@ -236,7 +233,6 @@ function getFeaturedImage(post: any) {
   overflow: hidden;
 }
 
-/* Pillar card: full image top, gradient to teal at bottom, text in lower third */
 .pillar-card {
   display: block;
   position: relative;
@@ -253,7 +249,6 @@ function getFeaturedImage(post: any) {
   background-position: center top;
   text-decoration: none;
   overflow: hidden;
-  transition: background-image 0.3s ease;
 }
 
 .pillar-card:hover {
@@ -268,13 +263,12 @@ function getFeaturedImage(post: any) {
   text-decoration: none;
 }
 
-/* Text content anchored to bottom */
 .pillar-card__content {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 1.5rem 1.25rem 1.5rem;
+  padding: 1.5rem 1.25rem;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -429,20 +423,22 @@ function getFeaturedImage(post: any) {
   border-bottom: 1px solid var(--teal-border);
 }
 
-.email-signup__heading {
-  font-family: var(--font-head);
-  font-size: clamp(1.5rem, 3.5vw, 2.25rem);
-  font-weight: 300;
-  color: var(--ink);
-  line-height: 1.2;
-  margin-bottom: 0.5rem;
+/* Force Klaviyo form into brand typography */
+.email-signup :global(.klaviyo-form h1),
+.email-signup :global(.klaviyo-form h2),
+.email-signup :global(.klaviyo-form h3),
+.email-signup :global([class*="heading"]),
+.email-signup :global([class*="Heading"]) {
+  font-family: var(--font-head) !important;
+  font-weight: 300 !important;
+  letter-spacing: -0.01em !important;
 }
 
-.email-signup__sub {
-  font-size: 1rem;
-  color: var(--ink-muted);
-  margin-bottom: 2rem;
-  line-height: 1.5;
+.email-signup :global(.klaviyo-form p),
+.email-signup :global([class*="subheading"]),
+.email-signup :global([class*="Subheading"]) {
+  font-family: var(--font-body) !important;
+  font-weight: 300 !important;
 }
 
 /* ── Trust strip ──────────────────────── */
