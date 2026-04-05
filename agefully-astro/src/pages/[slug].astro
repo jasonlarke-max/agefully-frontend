@@ -4,10 +4,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 const WP_API = 'https://public-api.wordpress.com/wp/v2/sites/250024892';
 
 export async function getStaticPaths() {
+  const API = 'https://public-api.wordpress.com/wp/v2/sites/250024892';
   try {
     const [postsRes, pagesRes] = await Promise.all([
-      fetch(`${WP_API}/posts?per_page=100&status=publish&_fields=slug`),
-      fetch(`${WP_API}/pages?per_page=100&status=publish&_fields=slug`),
+      fetch(`${API}/posts?per_page=100&status=publish&_fields=slug`),
+      fetch(`${API}/pages?per_page=100&status=publish&_fields=slug`),
     ]);
     const posts = postsRes.ok ? await postsRes.json() : [];
     const pages = pagesRes.ok ? await pagesRes.json() : [];
