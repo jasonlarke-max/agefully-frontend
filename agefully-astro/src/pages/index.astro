@@ -13,7 +13,7 @@ const PILLARS = [
 
 let posts = [];
 try {
-  const res = await fetch(`${WP_API}/posts?per_page=6&status=publish&_fields=id,slug,title,excerpt,date,categories,_links,_embedded&_embed=1`);
+  const res = await fetch(`${WP_API}/posts?per_page=6&status=publish&_fields=id,slug,title,excerpt,date,categories,_links&_embed=1`);
   if (res.ok) {
     posts = await res.json();
   }
@@ -35,10 +35,19 @@ try {
   if (res.ok) featured = await res.json();
 } catch (e) {}
 
+function decodeHTML(str: string): string {
+  return str
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'");
+}
+
 function getPillarName(post: any) {
   if (!post.categories?.length || !categories.length) return null;
   const cat = categories.find((c: any) => post.categories.includes(c.id));
-  return cat?.name ?? null;
+  return cat ? decodeHTML(cat.name) : null;
 }
 
 function getFeaturedImage(post: any) {
@@ -96,39 +105,6 @@ function getFeaturedImage(post: any) {
       </section>
     );
   })()}
-
-  <!-- Latest articles -->
-  <section class="latest">
-    <div class="container">
-      <div class="latest__header">
-        <p class="section-label">Latest reads</p>
-      </div>
-      {posts.length > 0 ? (
-        <div class="articles-grid">
-          {posts.map((post: any) => {
-            const pillar = getPillarName(post);
-            const img = getFeaturedImage(post);
-            const excerpt = post.excerpt?.rendered?.replace(/<[^>]+>/g, '').trim() ?? '';
-            return (
-              <a href={`/${post.slug}`} class="article-card">
-                {img
-                  ? <img src={img} alt="" class="article-card__img" loading="lazy" />
-                  : <div class="article-card__img-placeholder" />
-                }
-                <div class="article-card__body">
-                  {pillar && <span class="article-card__pillar">{pillar}</span>}
-                  <h2 class="article-card__title" set:html={post.title.rendered} />
-                  {excerpt && <p class="article-card__excerpt">{excerpt.slice(0, 140)}{excerpt.length > 140 ? '…' : ''}</p>}
-                </div>
-              </a>
-            );
-          })}
-        </div>
-      ) : (
-        <p class="no-posts">Articles coming soon.</p>
-      )}
-    </div>
-  </section>
 
   <!-- Klaviyo signup -->
   <section class="klaviyo-signup">
@@ -323,32 +299,6 @@ function getFeaturedImage(post: any) {
   text-underline-offset: 2px;
 }
 
-/* Latest */
-.latest {
-  padding: 4rem 0;
-}
-
-.articles-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
-}
-
-.article-card {
-  display: block;
-  text-decoration: none;
-  color: inherit;
-}
-
-.article-card:hover {
-  text-decoration: none;
-}
-
-.no-posts {
-  color: var(--ink-muted);
-  font-style: italic;
-}
-
 /* Klaviyo signup */
 .klaviyo-signup {
   padding: 3rem 0;
@@ -380,17 +330,11 @@ function getFeaturedImage(post: any) {
     grid-template-columns: 1fr;
     gap: 1.5rem;
   }
-  .articles-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
 }
 
 @media (max-width: 600px) {
   .pillars__grid {
     grid-template-columns: 1fr 1fr;
-  }
-  .articles-grid {
-    grid-template-columns: 1fr;
   }
   .hero {
     padding: 4rem 1.5rem 3.5rem;
