@@ -282,6 +282,16 @@ img {
   padding: 0.25rem 0.5rem;
 }
 
+/* ── Klaviyo: suppress floating popup ─── */
+/* Popup/flyout is delivered via iframe; inline embed form renders as HTML and is unaffected. */
+/* If popup persists, check Klaviyo dashboard for a separate popup form ID and remove it. */
+.klaviyo_messaging_iframe {
+  display: none !important;
+}
+.klaviyo-form-background {
+  display: none !important;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .site-nav__links {
