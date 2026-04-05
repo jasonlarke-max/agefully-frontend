@@ -44,6 +44,8 @@ if (!post) {
   return Astro.redirect('/404');
 }
 
+const isPost = contentType === 'post';
+
 const title = post.title?.rendered?.replace(/<[^>]+>/g, '') ?? '';
 const description = post.excerpt?.rendered?.replace(/<[^>]+>/g, '').trim().slice(0, 155) ?? '';
 const featuredImage = post._embedded?.['wp:featuredmedia']?.[0]?.source_url ?? null;
@@ -51,6 +53,10 @@ const datePublished = new Date(post.date);
 const dateFormatted = datePublished.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 
 const pillar = categories.find((c: any) => post.categories?.includes(c.id));
+
+// When a post has a featured image shown in the header, suppress it if it
+// also appears as the first block in the body content.
+const contentClass = `article__content${isPost && featuredImage ? ' has-featured-header' : ''}`;
 ---
 
 <BaseLayout title={title} description={description} image={featuredImage ?? undefined}>
@@ -63,14 +69,16 @@ const pillar = categories.find((c: any) => post.categories?.includes(c.id));
           <a href={`/pillar/${pillar.slug}`} class="article__pillar">{pillar.name}</a>
         )}
         <h1 class="article__title" set:html={post.title.rendered} />
-        <div class="article__meta">
-          <time datetime={post.date}>{dateFormatted}</time>
-        </div>
+        {isPost && (
+          <div class="article__meta">
+            <time datetime={post.date}>{dateFormatted}</time>
+          </div>
+        )}
       </div>
     </div>
 
-    <!-- Featured image -->
-    {featuredImage && (
+    <!-- Featured image — posts only -->
+    {isPost && featuredImage && (
       <div class="article__feature-img">
         <div class="container">
           <img src={featuredImage} alt="" loading="eager" />
@@ -80,7 +88,7 @@ const pillar = categories.find((c: any) => post.categories?.includes(c.id));
 
     <!-- Body -->
     <div class="article__body prose-container">
-      <div class="article__content" set:html={post.content.rendered} />
+      <div class={contentClass} set:html={post.content.rendered} />
     </div>
 
   </article>
@@ -91,10 +99,10 @@ const pillar = categories.find((c: any) => post.categories?.includes(c.id));
   padding-bottom: var(--space-xl);
 }
 
+/* ── Header ───────────────────────────── */
 .article__header {
   background: var(--teal);
   padding: 4rem 1.5rem 3rem;
-  margin-bottom: 0;
 }
 
 .article__pillar {
@@ -128,9 +136,9 @@ const pillar = categories.find((c: any) => post.categories?.includes(c.id));
   font-weight: 400;
 }
 
+/* ── Featured image ───────────────────── */
 .article__feature-img {
   margin-bottom: var(--space-md);
-  margin-top: 0;
 }
 
 .article__feature-img img {
@@ -140,15 +148,17 @@ const pillar = categories.find((c: any) => post.categories?.includes(c.id));
   border-radius: 0 0 4px 4px;
 }
 
+/* ── Body ─────────────────────────────── */
 .article__body {
   padding-top: var(--space-md);
 }
 
-/* Article content typography */
+/* ── Article content typography ───────── */
 .article__content {
   font-size: 1.0625rem;
   line-height: 1.75;
   color: var(--ink);
+  text-align: left;
 }
 
 .article__content h2 {
@@ -157,6 +167,7 @@ const pillar = categories.find((c: any) => post.categories?.includes(c.id));
   font-weight: 400;
   color: var(--teal);
   margin: 2.5rem 0 0.75rem;
+  text-align: left;
 }
 
 .article__content h3 {
@@ -165,10 +176,12 @@ const pillar = categories.find((c: any) => post.categories?.includes(c.id));
   font-weight: 400;
   color: var(--ink);
   margin: 2rem 0 0.5rem;
+  text-align: left;
 }
 
 .article__content p {
   margin-bottom: 1.25rem;
+  text-align: left;
 }
 
 .article__content ul,
@@ -178,6 +191,7 @@ const pillar = categories.find((c: any) => post.categories?.includes(c.id));
 
 .article__content li {
   margin-bottom: 0.4rem;
+  text-align: left;
 }
 
 .article__content a {
@@ -194,9 +208,90 @@ const pillar = categories.find((c: any) => post.categories?.includes(c.id));
   font-style: italic;
 }
 
-/* Affiliate disclosure — WordPress adds this as first paragraph with specific class */
+/* ── Gutenberg block resets ───────────── */
+
+/* Clear block backgrounds — Gutenberg defaults to WordPress blue */
+.article__content .wp-block-group,
+.article__content .wp-block-group__inner-container,
+.article__content .wp-block-columns,
+.article__content .wp-block-column {
+  background: transparent !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* Override any inline background-color set by the block editor */
+.article__content [class*="wp-block"][style*="background-color"] {
+  background-color: transparent !important;
+}
+
+/* Intentionally highlighted groups: remap to brand palette */
+.article__content .wp-block-group.has-background {
+  background-color: var(--teal-muted) !important;
+  padding: 1.5rem !important;
+  border-radius: 4px;
+  margin-bottom: 1.5rem;
+}
+
+/* Clear text-align overrides Gutenberg may inject */
+.article__content .has-text-align-center {
+  text-align: left !important;
+}
+
+/* Pullquote / blockquote */
+.article__content blockquote,
+.article__content .wp-block-quote {
+  border-left: 3px solid var(--teal);
+  padding: 0.75rem 1.25rem;
+  margin: 2rem 0;
+  background: var(--teal-muted);
+  border-radius: 0 4px 4px 0;
+}
+
+.article__content blockquote p,
+.article__content .wp-block-quote p {
+  color: var(--ink-muted);
+  font-style: italic;
+  margin-bottom: 0;
+}
+
+/* ── Buttons ──────────────────────────── */
+.article__content .wp-block-button__link,
+.article__content .wp-element-button {
+  background: var(--teal) !important;
+  color: var(--cream) !important;
+  border: none !important;
+  border-radius: 2px !important;
+  padding: 0.75rem 1.5rem !important;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-decoration: none !important;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.article__content .wp-block-button__link:hover,
+.article__content .wp-element-button:hover {
+  background: var(--teal-light) !important;
+  text-decoration: none !important;
+}
+
+/* ── Duplicate image suppression ─────── */
+/* When featured image is shown in header, hide the first image/cover
+   block in the body if it duplicates it. */
+.article__content.has-featured-header > figure:first-child,
+.article__content.has-featured-header > .wp-block-image:first-child,
+.article__content.has-featured-header > .wp-block-cover:first-child,
+.article__content.has-featured-header > .wp-block-media-text:first-child {
+  display: none;
+}
+
+/* ── Affiliate disclosure ─────────────── */
 .article__content .affiliate-disclosure,
-.article__content p:first-child:has(em) {
+.article__content p:first-child em:only-child {
+  display: block;
   font-size: 0.8125rem;
   color: var(--ink-faint);
   background: var(--teal-muted);
@@ -204,14 +299,17 @@ const pillar = categories.find((c: any) => post.categories?.includes(c.id));
   padding: 0.75rem 1rem;
   border-radius: 0 2px 2px 0;
   margin-bottom: 2rem;
+  font-style: normal;
 }
 
-/* Disclaimer sign-off lines */
-.article__content p:last-child:has(em) {
+/* ── Disclaimer sign-off ──────────────── */
+.article__content p:last-child em:only-child {
+  display: block;
   font-size: 0.875rem;
   color: var(--ink-faint);
   border-top: 1px solid var(--teal-border);
   padding-top: 1.25rem;
   margin-top: 2rem;
+  font-style: normal;
 }
 </style>
