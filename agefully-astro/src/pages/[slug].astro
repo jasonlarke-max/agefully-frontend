@@ -5,23 +5,31 @@ const WP_API = 'https://public-api.wordpress.com/wp/v2/sites/250024892';
 
 export async function getStaticPaths() {
   try {
-    const res = await fetch(`${WP_API}/posts?per_page=100&status=publish&_fields=slug`);
-    if (!res.ok) return [];
-    const posts = await res.json();
-    return posts.map((p: any) => ({ params: { slug: p.slug } }));
+    const [postsRes, pagesRes] = await Promise.all([
+      fetch(`${WP_API}/posts?per_page=100&status=publish&_fields=slug`),
+      fetch(`${WP_API}/pages?per_page=100&status=publish&_fields=slug`),
+    ]);
+    const posts = postsRes.ok ? await postsRes.json() : [];
+    const pages = pagesRes.ok ? await pagesRes.json() : [];
+    return [
+      ...posts.map((p: any) => ({ params: { slug: p.slug }, props: { contentType: 'post' } })),
+      ...pages.map((p: any) => ({ params: { slug: p.slug }, props: { contentType: 'page' } })),
+    ];
   } catch {
     return [];
   }
 }
 
 const { slug } = Astro.params;
+const { contentType } = Astro.props;
 
 let post: any = null;
 let categories: any[] = [];
 
 try {
+  const endpoint = contentType === 'page' ? 'pages' : 'posts';
   const [postRes, catRes] = await Promise.all([
-    fetch(`${WP_API}/posts?slug=${slug}&status=publish&_embed=1`),
+    fetch(`${WP_API}/${endpoint}?slug=${slug}&status=publish&_embed=1`),
     fetch(`${WP_API}/categories?per_page=50&_fields=id,name,slug`),
   ]);
   if (postRes.ok) {
