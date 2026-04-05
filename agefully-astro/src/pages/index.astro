@@ -29,6 +29,12 @@ try {
   }
 } catch (e) {}
 
+let featured: any = null;
+try {
+  const res = await fetch(`${WP_API}/posts/1301?_embed=1`);
+  if (res.ok) featured = await res.json();
+} catch (e) {}
+
 function getPillarName(post: any) {
   if (!post.categories?.length || !categories.length) return null;
   const cat = categories.find((c: any) => post.categories.includes(c.id));
@@ -48,7 +54,7 @@ function getFeaturedImage(post: any) {
     <div class="hero__inner">
       <p class="hero__eyebrow">For adults over 60</p>
       <h1 class="hero__heading">Clarity for Later Life.</h1>
-      <p class="hero__sub">Practical, independent guidance on the decisions that matter most — sourced honestly, delivered clearly, free from noise.</p>
+      <p class="hero__sub">Practical, independent guidance on the decisions that matter most, sourced honestly, delivered clearly, free from noise.</p>
     </div>
   </section>
 
@@ -67,6 +73,29 @@ function getFeaturedImage(post: any) {
       </div>
     </div>
   </section>
+
+  <!-- Featured article -->
+  {featured && (() => {
+    const pillarName = getPillarName(featured);
+    const img = getFeaturedImage(featured);
+    const excerpt = featured.excerpt?.rendered?.replace(/<[^>]+>/g, '').trim() ?? '';
+    return (
+      <section class="featured">
+        <div class="container">
+          <p class="section-label">Featured read</p>
+          <a href={`/${featured.slug}`} class="featured-card">
+            {img && <img src={img} alt="" class="featured-card__img" loading="lazy" />}
+            <div class="featured-card__body">
+              {pillarName && <span class="featured-card__pillar">{pillarName}</span>}
+              <h2 class="featured-card__title" set:html={featured.title.rendered} />
+              {excerpt && <p class="featured-card__excerpt">{excerpt.slice(0, 220)}{excerpt.length > 220 ? '…' : ''}</p>}
+              <span class="featured-card__cta">Read article &rarr;</span>
+            </div>
+          </a>
+        </div>
+      </section>
+    );
+  })()}
 
   <!-- Latest articles -->
   <section class="latest">
@@ -226,6 +255,74 @@ function getFeaturedImage(post: any) {
   opacity: 1;
 }
 
+/* Featured article */
+.featured {
+  padding: 4rem 0;
+  border-bottom: 1px solid var(--teal-border);
+}
+
+.featured-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+}
+
+.featured-card:hover {
+  text-decoration: none;
+}
+
+.featured-card__img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.featured-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.featured-card__pillar {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--teal);
+}
+
+.featured-card__title {
+  font-family: var(--font-head);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 300;
+  color: var(--ink);
+  line-height: 1.2;
+  margin: 0;
+}
+
+.featured-card__excerpt {
+  font-size: 1rem;
+  color: var(--ink-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.featured-card__cta {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--teal);
+  margin-top: 0.25rem;
+}
+
+.featured-card:hover .featured-card__cta {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 /* Latest */
 .latest {
   padding: 4rem 0;
@@ -278,6 +375,10 @@ function getFeaturedImage(post: any) {
 @media (max-width: 900px) {
   .pillars__grid {
     grid-template-columns: repeat(3, 1fr);
+  }
+  .featured-card {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
   }
   .articles-grid {
     grid-template-columns: repeat(2, 1fr);

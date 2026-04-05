@@ -11,11 +11,11 @@ const { title, description = 'Practical, independent guidance for adults over 60
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 
 const pillars = [
-  { label: 'Health', href: '/pillar/health-and-comfort' },
-  { label: 'Money', href: '/pillar/money-and-lifestyle' },
-  { label: 'Community', href: '/pillar/community-and-purpose' },
-  { label: 'Home', href: '/pillar/home-and-design' },
-  { label: 'Style', href: '/pillar/style-and-wellbeing' },
+  { label: 'Health & Comfort', href: '/pillar/health-and-comfort' },
+  { label: 'Money & Lifestyle', href: '/pillar/money-and-lifestyle' },
+  { label: 'Community & Purpose', href: '/pillar/community-and-purpose' },
+  { label: 'Home & Design', href: '/pillar/home-and-design' },
+  { label: 'Style & Wellbeing', href: '/pillar/style-and-wellbeing' },
 ];
 ---
 <!doctype html>
@@ -44,6 +44,24 @@ const pillars = [
 
     <!-- Klaviyo -->
     <script async type="text/javascript" src="https://static.klaviyo.com/onsite/js/klaviyo.js?company_id=Yjpm8D"></script>
+
+    <!-- Klaviyo popup: trigger at 60% scroll, not on load -->
+    <script is:inline>
+      (function () {
+        var triggered = false;
+        function onScroll() {
+          if (triggered) return;
+          var scrollable = document.documentElement.scrollHeight - window.innerHeight;
+          if (scrollable > 0 && window.scrollY / scrollable >= 0.6) {
+            triggered = true;
+            window.removeEventListener('scroll', onScroll);
+            window._klOnsite = window._klOnsite || [];
+            window._klOnsite.push(['openForm', 'Ub73z8']);
+          }
+        }
+        window.addEventListener('scroll', onScroll, { passive: true });
+      })();
+    </script>
   </head>
   <body>
     <header>
