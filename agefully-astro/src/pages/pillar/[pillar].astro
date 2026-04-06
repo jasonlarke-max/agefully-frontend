@@ -3,26 +3,71 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
 const WP_API = 'https://public-api.wordpress.com/wp/v2/sites/250024892';
 
+const PILLAR_CONFIG: Record<string, {
+  name: string;
+  hook: string;
+  hookItalic: string;
+  tagline: string;
+  image: string;
+  num: string;
+}> = {
+  'health-and-comfort': {
+    name: 'Health & Comfort',
+    hook: 'Your health,',
+    hookItalic: 'your terms.',
+    tagline: 'Practical steps that make life easier and more comfortable.',
+    image: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=1600&q=80',
+    num: '01',
+  },
+  'money-and-lifestyle': {
+    name: 'Money & Lifestyle',
+    hook: 'Your money,',
+    hookItalic: 'working clearly.',
+    tagline: 'Straightforward explanations, smarter financial choices.',
+    image: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1600&q=80',
+    num: '02',
+  },
+  'community-and-purpose': {
+    name: 'Community & Purpose',
+    hook: 'Stay connected,',
+    hookItalic: 'with purpose.',
+    tagline: 'Connection, contribution, and staying meaningfully involved.',
+    image: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1600&q=80',
+    num: '03',
+  },
+  'home-and-design': {
+    name: 'Home & Design',
+    hook: 'Your home,',
+    hookItalic: 'working for you.',
+    tagline: 'Guides to make your home simple, calm, and right for you.',
+    image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=1600&q=80',
+    num: '04',
+  },
+  'style-and-wellbeing': {
+    name: 'Style & Wellbeing',
+    hook: 'Your style,',
+    hookItalic: 'entirely yours.',
+    tagline: 'A modern approach to living well and expressing personal style.',
+    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=1600&q=80',
+    num: '05',
+  },
+};
+
 export async function getStaticPaths() {
-  const PILLARS = {
-    'health-and-comfort':    { name: 'Health & Comfort',   tagline: 'Practical steps that make life easier and more comfortable.' },
-    'money-and-lifestyle':   { name: 'Money & Lifestyle',  tagline: 'Straightforward explanations, smarter financial choices.' },
-    'community-and-purpose': { name: 'Community & Purpose',tagline: 'Connection, contribution, and staying meaningfully involved.' },
-    'home-and-design':       { name: 'Home & Design',      tagline: 'Guides to make your home simple, calm, and right for you.' },
-    'style-and-wellbeing':   { name: 'Style & Wellbeing',  tagline: 'A modern approach to living well and expressing personal style.' },
-  };
-  return Object.entries(PILLARS).map(([slug, meta]) => ({
-    params: { pillar: slug },
-    props: { meta },
-  }));
+  return [
+    'health-and-comfort',
+    'money-and-lifestyle',
+    'community-and-purpose',
+    'home-and-design',
+    'style-and-wellbeing',
+  ].map(slug => ({ params: { pillar: slug } }));
 }
 
 const { pillar } = Astro.params;
-const { meta } = Astro.props;
+const config = PILLAR_CONFIG[pillar as string];
 
 let posts: any[] = [];
 try {
-  // Get category ID by slug, then fetch posts
   const catRes = await fetch(`${WP_API}/categories?slug=${pillar}&_fields=id,name,slug`);
   if (catRes.ok) {
     const cats = await catRes.json();
@@ -33,109 +78,563 @@ try {
   }
 } catch {}
 
-function getFeaturedImage(post: any) {
+function getFeaturedImage(post: any): string | null {
   try {
     return post._embedded?.['wp:featuredmedia']?.[0]?.source_url ?? null;
   } catch { return null; }
 }
+
+function getExcerpt(post: any, length = 180): string {
+  const raw = post.excerpt?.rendered?.replace(/<[^>]+>/g, '').trim() ?? '';
+  return raw.length > length ? raw.slice(0, length) + '…' : raw;
+}
+
+const lead    = posts[0] ?? null;
+const grid    = posts.slice(1, 4);
+const list    = posts.slice(4);
+const count   = posts.length;
 ---
 
-<BaseLayout title={meta.name} description={`${meta.tagline} Read all Agefully articles in ${meta.name}.`}>
+<BaseLayout
+  title={config.name}
+  description={`${config.tagline} Read all Agefully articles in ${config.name}.`}
+>
 
-  <!-- Header -->
-  <div class="pillar-header">
-    <div class="prose-container">
-      <p class="pillar-header__label">Pillar</p>
-      <h1 class="pillar-header__title">{meta.name}</h1>
-      <p class="pillar-header__tagline">{meta.tagline}</p>
+  <!-- Pillar header -->
+  <header class="pillar-header" id="pillar-header">
+    <div class="pillar-header__bg" id="parallax-bg" style={`background-image: linear-gradient(to bottom, rgba(24,77,87,0.04) 0%, rgba(24,77,87,0.38) 45%, rgba(24,77,87,0.78) 80%, rgba(24,77,87,0.90) 100%), url('${config.image}');`}></div>
+    <div class="pillar-header__inner container">
+      <div>
+        <p class="pillar-header__eyebrow">
+          <span class="pillar-header__eyebrow-line"></span>
+          {config.name}
+        </p>
+        <h1 class="pillar-header__title">
+          {config.hook}<br /><em>{config.hookItalic}</em>
+        </h1>
+      </div>
+      <div class="pillar-header__meta">
+        <p class="pillar-header__tagline">{config.tagline}</p>
+        {count > 0 && <p class="pillar-header__count">{count} {count === 1 ? 'article' : 'articles'}</p>}
+      </div>
     </div>
-  </div>
+  </header>
 
-  <!-- Articles -->
-  <section class="pillar-articles">
+  {/* Lead article */}
+  {lead && (
+    <>
+      <div class="container">
+        <p class="section-label fade-in">Start here</p>
+      </div>
+      <section class="lead fade-in">
+        <div class="container">
+          <a href={`/${lead.slug}`} class="lead__inner">
+            <div class="lead__image-wrap">
+              {getFeaturedImage(lead)
+                ? <img src={getFeaturedImage(lead)!} alt="" class="lead__img" loading="eager" />
+                : <div class="lead__img-placeholder" />
+              }
+              <span class="lead__badge">{config.name}</span>
+            </div>
+            <div class="lead__body">
+              <p class="lead__marker">Editor's pick</p>
+              <h2 class="lead__title" set:html={lead.title.rendered} />
+              <p class="lead__excerpt">{getExcerpt(lead, 220)}</p>
+              <span class="lead__cta">Read article &rarr;</span>
+            </div>
+          </a>
+        </div>
+      </section>
+    </>
+  )}
+
+  {/* Secondary grid */}
+  {grid.length > 0 && (
     <div class="container">
-      {posts.length > 0 ? (
-        <div class="articles-grid">
-          {posts.map((post: any) => {
-            const img = getFeaturedImage(post);
-            const excerpt = post.excerpt?.rendered?.replace(/<[^>]+>/g, '').trim() ?? '';
-            return (
-              <a href={`/${post.slug}`} class="article-card">
-                {img
-                  ? <img src={img} alt="" class="article-card__img" loading="lazy" />
-                  : <div class="article-card__img-placeholder" />
+      <p class="section-label fade-in">Recent guides</p>
+      <section class="grid-section">
+        <div class="article-grid">
+          {grid.map((post: any, i: number) => (
+            <a href={`/${post.slug}`} class="article-card fade-up">
+              <div class="article-card__image">
+                {getFeaturedImage(post)
+                  ? <img src={getFeaturedImage(post)!} alt="" loading="lazy" />
+                  : <div class="article-card__placeholder" />
                 }
-                <div class="article-card__body">
-                  <span class="article-card__pillar">{meta.name}</span>
-                  <h2 class="article-card__title" set:html={post.title.rendered} />
-                  {excerpt && <p class="article-card__excerpt">{excerpt.slice(0, 140)}{excerpt.length > 140 ? '…' : ''}</p>}
-                </div>
-              </a>
-            );
-          })}
+              </div>
+              <p class="article-card__num">0{i + 2}</p>
+              <h3 class="article-card__title" set:html={post.title.rendered} />
+              <p class="article-card__excerpt">{getExcerpt(post, 140)}</p>
+              <span class="article-card__cta">Read &rarr;</span>
+            </a>
+          ))}
         </div>
-      ) : (
-        <div class="empty-state">
-          <p>Articles in this pillar coming soon.</p>
-        </div>
-      )}
+      </section>
     </div>
+  )}
+
+  {/* Further reading list */}
+  {list.length > 0 && (
+    <div class="container">
+      <p class="section-label fade-in">Further reading</p>
+      <section class="list-section">
+        {list.map((post: any) => (
+          <a href={`/${post.slug}`} class="list-item fade-up">
+            <div class="list-item__body">
+              <h3 class="list-item__title" set:html={post.title.rendered} />
+              <p class="list-item__excerpt">{getExcerpt(post, 160)}</p>
+            </div>
+            {getFeaturedImage(post) && (
+              <div class="list-item__image">
+                <img src={getFeaturedImage(post)!} alt="" loading="lazy" />
+              </div>
+            )}
+          </a>
+        ))}
+      </section>
+    </div>
+  )}
+
+  {/* Empty state */}
+  {count === 0 && (
+    <div class="container">
+      <div class="empty-state">
+        <p>Articles in this pillar coming soon.</p>
+      </div>
+    </div>
+  )}
+
+  <!-- Email strip -->
+  <section class="email-strip fade-in">
+    <div class="email-strip__inner">
+      <div>
+        <h2 class="email-strip__heading">Practical guidance, delivered clearly.</h2>
+        <p class="email-strip__sub">One email when something is worth your time.</p>
+      </div>
+      <div class="klaviyo-form-RQPLie"></div>
+    </div>
+    <p class="email-strip__promise">Clear guidance for you, meaningful support for others.</p>
   </section>
 
 </BaseLayout>
 
 <style>
+/* ── Pillar header ────────────────── */
 .pillar-header {
-  background: var(--teal);
-  padding: 4rem 1.5rem 3.5rem;
-  margin-bottom: var(--space-md);
+  position: relative;
+  min-height: 58vh;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
 }
-
-.pillar-header__label {
+.pillar-header__bg {
+  position: absolute;
+  inset: -15% 0 -15%;
+  background-size: cover;
+  background-position: center 40%;
+  will-change: transform;
+}
+.pillar-header__inner {
+  position: relative;
+  z-index: 2;
+  padding-top: 3.5rem;
+  padding-bottom: 3.5rem;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 2rem;
+}
+.pillar-header__eyebrow {
   font-size: 0.7rem;
   font-weight: 600;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(249,245,242,0.5);
-  margin-bottom: 0.75rem;
+  color: rgba(249,245,242,0.6);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  animation: headerFadeUp 0.7s cubic-bezier(0.25,0.46,0.45,0.94) both;
 }
-
+.pillar-header__eyebrow-line {
+  display: block;
+  width: 20px;
+  height: 1px;
+  background: rgba(249,245,242,0.5);
+}
 .pillar-header__title {
   font-family: var(--font-head);
-  font-size: clamp(2rem, 5vw, 3rem);
-  font-weight: 300;
+  font-size: clamp(3.25rem, 8vw, 6rem);
+  font-weight: 200;
+  line-height: 1.0;
+  letter-spacing: -0.02em;
   color: var(--cream);
-  line-height: 1.15;
-  margin-bottom: 0.75rem;
+  animation: headerFadeUp 0.9s cubic-bezier(0.25,0.46,0.45,0.94) 0.15s both;
 }
-
-.pillar-header__tagline {
-  font-size: 1.0625rem;
+.pillar-header__title em {
+  font-style: italic;
   color: rgba(249,245,242,0.75);
+}
+@keyframes headerFadeUp {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.pillar-header__meta { text-align: right; }
+.pillar-header__tagline {
+  font-size: 0.9375rem;
   font-weight: 300;
-  max-width: 500px;
+  color: rgba(249,245,242,0.65);
+  line-height: 1.6;
+  max-width: 280px;
+  text-align: right;
+}
+.pillar-header__count {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: rgba(249,245,242,0.4);
+  letter-spacing: 0.06em;
+  margin-top: 0.75rem;
 }
 
-.pillar-articles {
-  padding-bottom: var(--space-xl);
+/* ── Section label ────────────────── */
+.section-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  padding: 3rem 0 1.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--teal-border);
 }
 
-.articles-grid {
+/* ── Lead article ─────────────────── */
+.lead { border-bottom: 1px solid var(--teal-border); padding-bottom: 0; }
+.lead__inner {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  align-items: stretch;
+  text-decoration: none;
+  color: inherit;
+}
+.lead__image-wrap {
+  position: relative;
+  overflow: hidden;
+  background: var(--teal-muted);
+  aspect-ratio: 4/3;
+}
+.lead__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation: kenburns 12s ease-in-out infinite alternate;
+  transform-origin: center center;
+}
+.lead__img-placeholder {
+  width: 100%;
+  height: 100%;
+  background: var(--teal-muted);
+}
+@keyframes kenburns {
+  0%   { transform: scale(1.0) translate(0, 0); }
+  100% { transform: scale(1.06) translate(-1%, 0.5%); }
+}
+.lead__badge {
+  position: absolute;
+  top: 1.25rem;
+  left: 1.25rem;
+  background: var(--teal);
+  color: var(--cream);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.65rem;
+  border-radius: 2px;
+  z-index: 2;
+}
+.lead__body {
+  padding: 3.5rem 3rem 3.5rem 3.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: white;
+  border: 1px solid var(--teal-border);
+  border-left: none;
+  border-top: none;
+}
+.lead__marker {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.lead__marker::before {
+  content: '01';
+  font-family: var(--font-head);
+  font-size: 0.9rem;
+  font-weight: 200;
+  color: var(--teal);
+  letter-spacing: 0;
+}
+.lead__title {
+  font-family: var(--font-head);
+  font-size: clamp(1.5rem, 2.5vw, 2.25rem);
+  font-weight: 300;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin-bottom: 1.25rem;
+}
+.lead__excerpt {
+  font-size: 1rem;
+  font-weight: 300;
+  color: var(--ink-muted);
+  line-height: 1.7;
+  margin-bottom: 2rem;
+  flex: 1;
+}
+.lead__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--teal);
+  border-bottom: 1px solid var(--teal-border);
+  padding-bottom: 0.25rem;
+  width: fit-content;
+  transition: border-color 0.2s, gap 0.2s;
+}
+.lead__inner:hover .lead__cta {
+  border-color: var(--teal);
+  gap: 0.75rem;
+}
+
+/* ── Article grid ─────────────────── */
+.grid-section {
+  padding-bottom: 3.5rem;
+  border-bottom: 1px solid var(--teal-border);
+}
+.article-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
+  gap: 2.5rem;
+}
+.article-card {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: inherit;
+}
+.article-card__image {
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  background: var(--teal-muted);
+  margin-bottom: 1.25rem;
+  border-radius: 2px;
+}
+.article-card__image img,
+.article-card__placeholder {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s ease;
+  background: var(--teal-muted);
+}
+.article-card:hover .article-card__image img { transform: scale(1.04); }
+.article-card__num {
+  font-family: var(--font-head);
+  font-size: 0.8rem;
+  font-weight: 200;
+  color: var(--teal);
+  margin-bottom: 0.5rem;
+}
+.article-card__title {
+  font-family: var(--font-head);
+  font-size: 1.175rem;
+  font-weight: 300;
+  line-height: 1.25;
+  color: var(--ink);
+  margin-bottom: 0.65rem;
+  letter-spacing: -0.005em;
+  flex: 1;
+}
+.article-card__excerpt {
+  font-size: 0.875rem;
+  color: var(--ink-muted);
+  line-height: 1.65;
+  margin-bottom: 1rem;
+}
+.article-card__cta {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--teal);
+  transition: letter-spacing 0.15s;
+}
+.article-card:hover .article-card__cta { letter-spacing: 0.02em; }
+
+/* ── List section ─────────────────── */
+.list-section {
+  padding-bottom: 4rem;
+  border-bottom: 1px solid var(--teal-border);
+}
+.list-item {
+  display: grid;
+  grid-template-columns: 3fr 1fr;
+  gap: 2rem;
+  align-items: center;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--teal-border);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+.list-item:last-child { border-bottom: none; }
+.list-item__title {
+  font-family: var(--font-head);
+  font-size: 1.1rem;
+  font-weight: 300;
+  line-height: 1.3;
+  color: var(--ink);
+  margin-bottom: 0.4rem;
+  letter-spacing: -0.005em;
+}
+.list-item__excerpt {
+  font-size: 0.875rem;
+  color: var(--ink-muted);
+  line-height: 1.6;
+}
+.list-item__image {
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  background: var(--teal-muted);
+  border-radius: 2px;
+}
+.list-item__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s;
+}
+.list-item:hover .list-item__image img { transform: scale(1.04); }
+
+/* ── Email strip ──────────────────── */
+.email-strip {
+  background: var(--teal);
+  padding: 4.5rem 2rem 2.5rem;
+}
+.email-strip__inner {
+  max-width: 680px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 3rem;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+.email-strip__heading {
+  font-family: var(--font-head);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 300;
+  color: var(--cream);
+  line-height: 1.2;
+  margin-bottom: 0.5rem;
+}
+.email-strip__sub {
+  font-size: 0.9375rem;
+  color: rgba(249,245,242,0.6);
+  font-weight: 300;
+}
+.email-strip__promise {
+  font-size: 0.75rem;
+  color: rgba(249,245,242,0.35);
+  max-width: 680px;
+  margin: 0 auto;
+  display: block;
 }
 
+/* ── Empty state ──────────────────── */
 .empty-state {
-  padding: var(--space-lg) 0;
+  padding: 4rem 0;
   color: var(--ink-muted);
   font-style: italic;
 }
 
-@media (max-width: 900px) {
-  .articles-grid { grid-template-columns: repeat(2, 1fr); }
+/* ── Scroll animations ────────────── */
+.fade-up {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s cubic-bezier(0.25,0.46,0.45,0.94),
+              transform 0.7s cubic-bezier(0.25,0.46,0.45,0.94);
 }
-@media (max-width: 600px) {
-  .articles-grid { grid-template-columns: 1fr; }
+.fade-up.visible { opacity: 1; transform: translateY(0); }
+.fade-up:nth-child(2) { transition-delay: 0.08s; }
+.fade-up:nth-child(3) { transition-delay: 0.16s; }
+.fade-in {
+  opacity: 0;
+  transition: opacity 0.65s ease;
+}
+.fade-in.visible { opacity: 1; }
+
+/* ── Responsive ───────────────────── */
+@media (max-width: 960px) {
+  .lead__inner { grid-template-columns: 1fr; }
+  .lead__body {
+    border-left: 1px solid var(--teal-border);
+    border-top: none;
+    padding: 2.5rem 2rem;
+  }
+  .article-grid { grid-template-columns: 1fr 1fr; }
+  .pillar-header__inner { grid-template-columns: 1fr; }
+  .pillar-header__meta { text-align: left; }
+  .pillar-header__tagline { text-align: left; }
+  .email-strip__inner { grid-template-columns: 1fr; gap: 2rem; }
+}
+@media (max-width: 640px) {
+  .article-grid { grid-template-columns: 1fr; }
+  .list-item { grid-template-columns: 1fr; }
+  .list-item__image { display: none; }
+  .pillar-header__title { font-size: 2.75rem; }
 }
 </style>
+
+<script is:inline>
+(function() {
+  var bg = document.getElementById('parallax-bg');
+  var header = document.getElementById('pillar-header');
+  if (bg && header) {
+    window.addEventListener('scroll', function() {
+      var scrollY = window.scrollY;
+      var headerH = header.offsetHeight;
+      if (scrollY < headerH * 1.5) {
+        bg.style.transform = 'translateY(' + (scrollY / headerH * 30) + 'px)';
+      }
+    }, { passive: true });
+  }
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.fade-up, .fade-in').forEach(function(el) {
+    observer.observe(el);
+  });
+})();
+</script>
