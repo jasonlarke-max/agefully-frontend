@@ -1,0 +1,68 @@
+---
+export interface Props {
+  source: string;
+  dateChecked?: string | null;
+  url?: string | null;
+}
+const { source, dateChecked, url } = Astro.props;
+---
+
+<aside class="af-source">
+  <span class="af-source__label">Source</span>
+  <div class="af-source__body">
+    <slot />
+    <p class="af-source__meta">
+      {url
+        ? <a href={url} rel="noopener noreferrer">{source}</a>
+        : source
+      }
+      {dateChecked && <span> · Checked {dateChecked}</span>}
+    </p>
+  </div>
+</aside>
+
+<style>
+.af-source {
+  max-width: 680px;
+  margin: 2rem auto;
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid var(--agefully-rule);
+  border-bottom: 1px solid var(--agefully-rule);
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+}
+.af-source__label {
+  font: var(--type-meta);
+  color: var(--agefully-graphite);
+  display: block;
+  flex-shrink: 0;
+  padding-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.af-source__body {
+  font-family: "Source Serif 4", serif;
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--agefully-graphite);
+}
+.af-source__body :global(p) {
+  margin: 0 0 0.5em;
+  padding: 0;
+  max-width: none;
+  font-size: 17px;
+  color: var(--agefully-graphite);
+}
+.af-source__meta {
+  font-size: 13px !important;
+  color: var(--agefully-muted) !important;
+  margin-top: 0.5em;
+}
+.af-source__meta a {
+  color: var(--agefully-teal);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+</style>

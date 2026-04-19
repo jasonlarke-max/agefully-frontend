@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import '../styles/tokens.css';
 
 export interface Props {
   title: string;
@@ -38,9 +39,14 @@ const pillars = [
 
     <title>{title} | Agefully</title>
 
+    <!-- Self-hosted variable fonts (Fraunces, Source Serif 4, IBM Plex Mono) -->
+    <link rel="preload" href="/fonts/Fraunces-variable.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/SourceSerif4-variable.woff2" as="font" type="font/woff2" crossorigin />
+
+    <!-- Jost (body/nav/UI) — still served from Google CDN -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" />
 
     <!-- Klaviyo -->
     <script async type="text/javascript" src="https://static.klaviyo.com/onsite/js/klaviyo.js?company_id=Yjpm8D"></script>

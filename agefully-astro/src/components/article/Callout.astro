@@ -1,0 +1,46 @@
+---
+export interface Props {
+  label?: string;
+}
+const { label = 'Worth knowing' } = Astro.props;
+---
+
+<aside class="af-callout">
+  <span class="af-callout__label">{label}</span>
+  <div class="af-callout__body">
+    <slot />
+  </div>
+</aside>
+
+<style>
+.af-callout {
+  max-width: 680px;
+  margin: 2.5rem auto;
+  padding: 1.75rem 1.75rem 1.5rem;
+  background: var(--agefully-cream);
+  border-left: 3px solid var(--agefully-teal);
+}
+.af-callout__label {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--agefully-teal);
+  display: block;
+  margin-bottom: 0.75rem;
+}
+.af-callout__body {
+  font-family: "Source Serif 4", serif;
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--agefully-ink);
+}
+.af-callout__body :global(p:last-child) { margin-bottom: 0; }
+.af-callout__body :global(p) {
+  margin: 0 0 0.85em;
+  padding: 0;
+  max-width: none;
+  font-size: 18px;
+}
+</style>

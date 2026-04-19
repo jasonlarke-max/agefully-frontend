@@ -1,0 +1,68 @@
+---
+export interface Props {
+  src: string;
+  alt?: string;
+  caption?: string | null;
+  credit?: string | null;
+  width?: number;
+  height?: number;
+}
+
+const { src, alt = '', caption, credit, width, height } = Astro.props;
+---
+
+<figure class="af-featured">
+  <img
+    src={src}
+    alt={alt}
+    width={width}
+    height={height}
+    loading="eager"
+    fetchpriority="high"
+  />
+  {(caption || credit) && (
+    <figcaption class="af-featured__caption">
+      {caption && <span>{caption}</span>}
+      {credit && <span class="af-featured__credit">{credit}</span>}
+    </figcaption>
+  )}
+</figure>
+
+<style>
+.af-featured {
+  max-width: 1080px;
+  margin: 0 auto 3.5rem;
+  padding: 0 24px;
+}
+.af-featured img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  display: block;
+}
+.af-featured__caption {
+  font: var(--type-caption);
+  color: var(--agefully-muted);
+  margin-top: 0.75rem;
+  max-width: 680px;
+  margin-left: auto;
+  margin-right: auto;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.af-featured__credit {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-style: normal;
+  color: var(--agefully-muted);
+  flex-shrink: 0;
+}
+@media (max-width: 768px) {
+  .af-featured { padding: 0; }
+  .af-featured__caption { padding: 0 24px; }
+}
+</style>

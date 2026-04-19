@@ -1,0 +1,169 @@
+/* ─────────────────────────────────────────────
+   Agefully design tokens
+   Imported after global.css in BaseLayout.astro
+   Article-level type/layout rules scoped to
+   .af-article so they don't affect homepage /
+   pillar pages which use the existing system.
+───────────────────────────────────────────── */
+
+/* Self-hosted fonts */
+@font-face {
+  font-family: "Fraunces";
+  src: url("/fonts/Fraunces-variable.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-style: normal italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Source Serif 4";
+  src: url("/fonts/SourceSerif4-variable.woff2") format("woff2-variations");
+  font-weight: 200 900;
+  font-style: normal italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/IBMPlexMono-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ── Colour tokens ─────────────────────────── */
+:root {
+  --agefully-teal:     #184D57;
+  --agefully-cream:    #F9F5F2;
+  --agefully-ink:      #1A1A1A;
+  --agefully-graphite: #5A5A5A;
+  --agefully-muted:    #8A8A8A;
+  --agefully-rule:     #E8E2DC;
+  --agefully-paper:    #FFFFFF;
+
+  /* Type shortcuts */
+  --type-meta:    500 12px/1.2 "IBM Plex Mono", monospace;
+  --type-caption: italic 400 14px/1.5 "Source Serif 4", serif;
+
+  /* Spacing */
+  --space-1: 0.5rem;
+  --space-2: 1rem;
+  --space-3: 1.5rem;
+  --space-4: 2rem;
+  --space-5: 2.5rem;
+  --space-6: 3rem;
+  --space-7: 4rem;
+
+  /* Container widths */
+  --col-article: 680px;
+  --col-wide:    820px;
+  --col-xwide:  1080px;
+  --col-max:    1280px;
+}
+
+/* ── Article page wrapper ──────────────────── */
+.af-article {
+  background: var(--agefully-paper);
+  font-family: "Source Serif 4", serif;
+  font-size: 19px;
+  line-height: 1.7;
+  color: var(--agefully-ink);
+  font-feature-settings: "kern", "liga", "onum";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Body paragraph — centred column, correct measure */
+.af-article p {
+  max-width: 680px;
+  margin: 0 auto 1.2em;
+  padding: 0 24px;
+  font-family: "Source Serif 4", serif;
+  font-size: 19px;
+  line-height: 1.7;
+  color: var(--agefully-ink);
+}
+
+.af-article ul,
+.af-article ol {
+  max-width: 680px;
+  margin: 0 auto 1.4em;
+  padding: 0 24px 0 48px;
+}
+
+.af-article li {
+  margin-bottom: 0.4em;
+  font-family: "Source Serif 4", serif;
+  font-size: 19px;
+  line-height: 1.7;
+}
+
+.af-article h3 {
+  font-family: "Source Serif 4", serif;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--agefully-ink);
+  max-width: 680px;
+  margin: 2rem auto 0.75rem;
+  padding: 0 24px;
+}
+
+.af-article h4 {
+  font-family: "Source Serif 4", serif;
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--agefully-ink);
+  max-width: 680px;
+  margin: 1.5rem auto 0.5rem;
+  padding: 0 24px;
+}
+
+.af-article a {
+  color: var(--agefully-teal);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.af-article a:hover {
+  text-decoration-thickness: 2px;
+}
+
+.af-article strong { font-weight: 600; }
+.af-article em     { font-style: italic; }
+
+/* Text selection */
+.af-article ::selection {
+  background: var(--agefully-teal);
+  color: var(--agefully-cream);
+}
+
+/* Gutenberg paragraph block override — strip background colours */
+.af-article .wp-block-paragraph,
+.af-article .wp-block-group,
+.af-article .wp-block-columns,
+.af-article .wp-block-column {
+  background: transparent !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+.af-article [class*="wp-block"][style*="background-color"] {
+  background-color: transparent !important;
+}
+.af-article .has-text-align-center {
+  text-align: left !important;
+}
+
+/* Buttons from Gutenberg */
+.af-article .wp-block-button__link,
+.af-article .wp-element-button {
+  background: var(--agefully-teal) !important;
+  color: var(--agefully-cream) !important;
+  border: none !important;
+  border-radius: 2px !important;
+  padding: 0.75rem 1.5rem !important;
+  font-family: "Source Serif 4", serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none !important;
+  display: inline-block;
+}

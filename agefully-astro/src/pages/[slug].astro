@@ -1,5 +1,14 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import AffiliateDisclosure from '../components/article/AffiliateDisclosure.astro';
+import ArticleHeader from '../components/article/ArticleHeader.astro';
+import FeaturedImage from '../components/article/FeaturedImage.astro';
+import SignOff from '../components/article/SignOff.astro';
+import ReviewerCard from '../components/article/ReviewerCard.astro';
+import RelatedReading from '../components/article/RelatedReading.astro';
+import ArticleFooter from '../components/article/ArticleFooter.astro';
+import Lede from '../components/article/Lede.astro';
+import SectionMark from '../components/article/SectionMark.astro';
 
 const WP_API = 'https://public-api.wordpress.com/wp/v2/sites/250024892';
 
@@ -46,81 +55,453 @@ if (!post) {
 
 const isPost = contentType === 'post';
 
-const title = post.title?.rendered?.replace(/<[^>]+>/g, '') ?? '';
+// ── Core fields ───────────────────────────────────────────────
+const title       = post.title?.rendered?.replace(/<[^>]+>/g, '') ?? '';
 const description = post.excerpt?.rendered?.replace(/<[^>]+>/g, '').trim().slice(0, 155) ?? '';
-const featuredImage = post._embedded?.['wp:featuredmedia']?.[0]?.source_url ?? null;
-const datePublished = new Date(post.date);
-const dateFormatted = datePublished.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+const featuredImage    = post._embedded?.['wp:featuredmedia']?.[0]?.source_url ?? null;
+const featuredImageAlt = post._embedded?.['wp:featuredmedia']?.[0]?.alt_text ?? '';
 
-const pillar = categories.find((c: any) => post.categories?.includes(c.id));
+const publishedDate = post.date;
+const modifiedDate  = post.modified;
+// Only show "Updated" if modified is more than 24 h after published
+const isUpdated  = modifiedDate &&
+  new Date(modifiedDate).getTime() - new Date(publishedDate).getTime() > 86_400_000;
+const updatedDate = isUpdated ? modifiedDate : null;
 
-// When a post has a featured image shown in the header, suppress it if it
-// also appears as the first block in the body content.
-const contentClass = `article__content${isPost && featuredImage ? ' has-featured-header' : ''}`;
+// ── Post meta (gracefully absent until Jason configures WP fields) ──
+const meta               = post.meta ?? {};
+const dek                = meta.dek                      || null;
+const signoffVariant     = meta.signoff_variant          || null;
+const affiliateDisclosure = !!meta.affiliate_disclosure_needed;
+const featuredCaption    = meta.featured_image_caption   ||
+                           post._embedded?.['wp:featuredmedia']?.[0]?.caption?.rendered
+                             ?.replace(/<[^>]+>/g, '').trim()
+                           || null;
+const featuredCredit     = meta.featured_image_credit    || null;
+const reviewerName       = meta.reviewer_name            || null;
+const reviewerCredential = meta.reviewer_credential      || null;
+const reviewerBio        = meta.reviewer_bio             || null;
+const reviewerDate       = meta.reviewer_date            || null;
+
+// ── Read time ─────────────────────────────────────────────────
+const rawText  = (post.content?.rendered || '').replace(/<[^>]+>/g, '');
+const wordCount = rawText.trim().split(/\s+/).filter(Boolean).length;
+const readTime  = Number(meta.read_time_minutes) || Math.max(1, Math.round(wordCount / 200));
+
+// ── Pillar / category ─────────────────────────────────────────
+const pillar = categories.find((c: any) => post.categories?.includes(c.id)) ?? null;
+
+// ── Related posts ─────────────────────────────────────────────
+let relatedArticles: {
+  title: string; slug: string; excerpt: string; pillar: string; image: string | null;
+}[] = [];
+
+if (isPost && pillar?.id) {
+  try {
+    const relRes = await fetch(
+      `${WP_API}/posts?categories=${pillar.id}&per_page=4&status=publish&_embed=1&_fields=id,slug,title,excerpt,categories`
+    );
+    if (relRes.ok) {
+      const all = await relRes.json();
+      relatedArticles = (all as any[])
+        .filter((p: any) => p.id !== post.id)
+        .slice(0, 3)
+        .map((p: any) => ({
+          title:   p.title?.rendered?.replace(/<[^>]+>/g, '') ?? '',
+          slug:    p.slug,
+          excerpt: (p.excerpt?.rendered?.replace(/<[^>]+>/g, '').trim() ?? '').slice(0, 120),
+          pillar:  pillar.name,
+          image:   p._embedded?.['wp:featuredmedia']?.[0]?.source_url ?? null,
+        }));
+    }
+  } catch {}
+}
+
+// ── Content processing ────────────────────────────────────────
+function processContent(html: string): string {
+  let out = html;
+
+  // 1. Shortcode: [callout label="..."]...[/callout]
+  out = out.replace(
+    /\[callout(?:\s+label="([^"]*)")?\]([\s\S]*?)\[\/callout\]/g,
+    (_, label, body) =>
+      `<aside class="af-callout"><span class="af-callout__label">${label || 'Worth knowing'}</span><div class="af-callout__body">${body}</div></aside>`
+  );
+
+  // 2. Shortcode: [decision label="..."]...[/decision]
+  out = out.replace(
+    /\[decision(?:\s+label="([^"]*)")?\]([\s\S]*?)\[\/decision\]/g,
+    (_, label, body) =>
+      `<aside class="af-decision"><span class="af-decision__label">${label || 'The decision this reduces'}</span><div class="af-decision__body">${body}</div></aside>`
+  );
+
+  // 3. Shortcode: [source name="..." url="..." checked="..."]...[/source]
+  out = out.replace(
+    /\[source(?:\s+name="([^"]*)")?(?:\s+url="([^"]*)")?(?:\s+checked="([^"]*)")?\]([\s\S]*?)\[\/source\]/g,
+    (_, source, url, checked, body) => {
+      const link = url
+        ? `<a href="${url}" rel="noopener noreferrer">${source || 'Source'}</a>`
+        : (source || 'Source');
+      return `<aside class="af-source"><span class="af-source__label">Source</span><div class="af-source__body">${body}<p class="af-source__meta">${link}${checked ? ` · Checked ${checked}` : ''}</p></div></aside>`;
+    }
+  );
+
+  // 4. Gutenberg pullquote → af-pullquote
+  out = out.replace(
+    /<figure[^>]*class="[^"]*wp-block-pullquote[^"]*"[^>]*>\s*<blockquote[^>]*>\s*<p>([\s\S]*?)<\/p>(?:\s*<cite>([\s\S]*?)<\/cite>)?\s*<\/blockquote>\s*<\/figure>/g,
+    (_, quote, cite) => {
+      const attribution = cite
+        ? `<cite class="af-pullquote__cite">${cite}</cite>`
+        : '';
+      return `<aside class="af-pullquote"><div class="af-pullquote__mark" aria-hidden="true">&ldquo;</div><p class="af-pullquote__text">${quote}</p>${attribution}</aside>`;
+    }
+  );
+
+  // 5. Wide image blocks → af-body-image--wide
+  out = out.replace(
+    /<figure([^>]*)class="([^"]*wp-block-image[^"]*alignwide[^"]*)"([^>]*)>/g,
+    '<figure$1class="af-body-image af-body-image--wide"$3>'
+  );
+  // Column image blocks
+  out = out.replace(
+    /<figure([^>]*)class="([^"]*wp-block-image[^"]*)"([^>]*)>/g,
+    (match, before, classes, after) => {
+      if (classes.includes('af-body-image')) return match; // already transformed
+      return `<figure${before}class="af-body-image af-body-image--column"${after}>`;
+    }
+  );
+
+  // 6. Enhance H2s with af-h2 class + teal mark
+  out = out.replace(
+    /<h2([^>]*)>([\s\S]*?)<\/h2>/g,
+    (_, attrs, content) => {
+      if (content.includes('af-h2__mark')) return `<h2${attrs}>${content}</h2>`;
+      const newAttrs = attrs.includes('class=')
+        ? attrs.replace(/class="([^"]*)"/, 'class="af-h2 $1"')
+        : (attrs ? `${attrs} class="af-h2"` : ' class="af-h2"');
+      return `<h2${newAttrs}><span class="af-h2__mark" aria-hidden="true"></span>${content}</h2>`;
+    }
+  );
+
+  // 7. Drop cap on first real paragraph (skip em-only disclosure paragraphs)
+  let ledeApplied = false;
+  out = out.replace(
+    /<p([^>]*)>([\s\S]*?)<\/p>/g,
+    (match, attrs, content) => {
+      if (ledeApplied) return match;
+      // Skip paragraphs that are only a single <em> (WP inline disclosure)
+      if (/^\s*<em>[^<]*<\/em>\s*$/.test(content)) return match;
+      ledeApplied = true;
+      return `<p${attrs} class="af-lede">${content}</p>`;
+    }
+  );
+
+  return out;
+}
+
+// Inline newsletter insertion after 3rd H2 (articles > 1200 words)
+function insertInlineNewsletter(html: string, wc: number): string {
+  if (wc < 1200) return html;
+  let count = 0;
+  const insert = `<aside class="af-newsletter"><div class="af-newsletter__inner"><div><p class="af-newsletter__label">Agefully newsletter</p><p class="af-newsletter__pitch">One email a week. Practical guides. No filler.</p></div><div class="klaviyo-form-RQPLie"></div></div></aside>`;
+  return html.replace(/<\/h2>/g, (match) => {
+    count++;
+    return count === 3 ? match + insert : match;
+  });
+}
+
+let processedContent = '';
+if (isPost) {
+  const withComponents = processContent(post.content.rendered);
+  processedContent = insertInlineNewsletter(withComponents, wordCount);
+}
+
+// Page (non-post) data for the existing simple template
+const dateFormatted = new Date(publishedDate).toLocaleDateString('en-GB', {
+  day: 'numeric', month: 'long', year: 'numeric',
+});
 ---
 
 <BaseLayout title={title} description={description} image={featuredImage ?? undefined}>
-  <article class="article">
 
-    <!-- Header -->
-    <div class="article__header">
-      <div class="prose-container">
-        {pillar && (
-          <a href={`/pillar/${pillar.slug}`} class="article__pillar">{pillar.name}</a>
-        )}
-        <h1 class="article__title" set:html={post.title.rendered} />
-        {isPost && (
-          <div class="article__meta">
-            <time datetime={post.date}>{dateFormatted}</time>
-          </div>
-        )}
-      </div>
+  {isPost ? (
+
+    <!-- ── Article template ───────────────────────── -->
+    <div class="af-article">
+
+      <!-- Style-only components (is:global CSS) -->
+      <Lede />
+      <SectionMark />
+
+      <AffiliateDisclosure show={affiliateDisclosure} />
+
+      <ArticleHeader
+        category={pillar?.name ?? ''}
+        categorySlug={pillar?.slug ?? ''}
+        publishedDate={publishedDate}
+        updatedDate={updatedDate}
+        readTimeMinutes={readTime}
+        title={title}
+        dek={dek}
+        reviewer={reviewerName ? { name: reviewerName, credential: reviewerCredential ?? '' } : null}
+      />
+
+      {featuredImage && (
+        <FeaturedImage
+          src={featuredImage}
+          alt={featuredImageAlt}
+          caption={featuredCaption}
+          credit={featuredCredit}
+        />
+      )}
+
+      <div class="af-body" set:html={processedContent} />
+
+      {signoffVariant && signoffVariant !== 'none' && (
+        <SignOff variant={signoffVariant as 'health' | 'financial' | 'legal'} />
+      )}
+
+      {reviewerName && (
+        <ReviewerCard
+          name={reviewerName}
+          credential={reviewerCredential ?? ''}
+          bio={reviewerBio}
+          reviewedDate={reviewerDate}
+        />
+      )}
+
+      <RelatedReading articles={relatedArticles} />
+
+      <ArticleFooter
+        category={pillar?.name ?? ''}
+        categorySlug={pillar?.slug ?? ''}
+        publishedDate={publishedDate}
+        updatedDate={updatedDate}
+      />
+
     </div>
 
-    <!-- Featured image — posts only -->
-    {isPost && featuredImage && (
-      <div class="article__feature-img">
-        <div class="container">
-          <img src={featuredImage} alt="" loading="eager" />
+  ) : (
+
+    <!-- ── Page template (unchanged) ─────────────── -->
+    <article class="article">
+      <div class="article__header">
+        <div class="prose-container">
+          <h1 class="article__title" set:html={post.title.rendered} />
         </div>
       </div>
-    )}
+      <div class="article__body prose-container">
+        <div class="article__content" set:html={post.content.rendered} />
+      </div>
+    </article>
 
-    <!-- Body -->
-    <div class="article__body prose-container">
-      <div class={contentClass} set:html={post.content.rendered} />
-    </div>
+  )}
 
-  </article>
 </BaseLayout>
 
 <style>
-.article {
-  padding-bottom: var(--space-xl);
+/* ── Article body — inline content from WP ───── */
+/* Component-specific CSS lives in tokens.css and each component.
+   This block handles the rendered .af-body content only.          */
+
+/* Inline newsletter injected into content */
+.af-body :global(.af-newsletter) {
+  max-width: 820px;
+  margin: 3.5rem auto;
+  padding: 2rem;
+  background: var(--agefully-cream);
+  border-top: 2px solid var(--agefully-teal);
+}
+.af-body :global(.af-newsletter__inner) {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 2rem;
+  align-items: center;
+}
+.af-body :global(.af-newsletter__label) {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--agefully-teal);
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0;
+  max-width: none;
+}
+.af-body :global(.af-newsletter__pitch) {
+  font-family: "Fraunces", serif;
+  font-size: 22px;
+  line-height: 1.3;
+  color: var(--agefully-ink);
+  margin: 0;
+  padding: 0;
+  max-width: none;
 }
 
-/* ── Header ───────────────────────────── */
+/* Injected shortcode components — override af-article p centring */
+.af-body :global(.af-callout),
+.af-body :global(.af-decision),
+.af-body :global(.af-source),
+.af-body :global(.af-pullquote) {
+  max-width: 680px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.af-body :global(.af-pullquote) { max-width: 820px; }
+
+/* Injected af-callout styles */
+.af-body :global(.af-callout) {
+  margin: 2.5rem auto;
+  padding: 1.75rem 1.75rem 1.5rem;
+  background: var(--agefully-cream);
+  border-left: 3px solid var(--agefully-teal);
+}
+.af-body :global(.af-callout__label) {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--agefully-teal);
+  display: block;
+  margin-bottom: 0.75rem;
+}
+.af-body :global(.af-callout__body) {
+  font-family: "Source Serif 4", serif;
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--agefully-ink);
+}
+.af-body :global(.af-callout__body p) {
+  margin: 0 0 0.85em;
+  padding: 0;
+  max-width: none;
+  font-size: 18px;
+}
+
+/* Injected af-decision styles */
+.af-body :global(.af-decision) {
+  margin: 3rem auto;
+  padding: 2rem 2rem 1.75rem;
+  background: var(--agefully-teal);
+}
+.af-body :global(.af-decision__label) {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: rgba(249,245,242,0.7);
+  display: block;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(249,245,242,0.2);
+}
+.af-body :global(.af-decision__body) {
+  font-family: "Fraunces", serif;
+  font-size: 21px;
+  line-height: 1.45;
+  color: var(--agefully-cream);
+}
+.af-body :global(.af-decision__body p) {
+  margin: 0 0 0.85em;
+  padding: 0;
+  max-width: none;
+  font-family: "Fraunces", serif;
+  font-size: 21px;
+  color: var(--agefully-cream);
+}
+
+/* Injected af-source styles */
+.af-body :global(.af-source) {
+  margin: 2rem auto;
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid var(--agefully-rule);
+  border-bottom: 1px solid var(--agefully-rule);
+  display: flex;
+  gap: 1.25rem;
+}
+.af-body :global(.af-source__label) {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--agefully-graphite);
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.af-body :global(.af-source__body) {
+  font-family: "Source Serif 4", serif;
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--agefully-graphite);
+}
+.af-body :global(.af-source__body p) {
+  margin: 0 0 0.5em;
+  padding: 0;
+  max-width: none;
+  font-size: 17px;
+}
+.af-body :global(.af-source__meta) {
+  font-size: 13px !important;
+  color: var(--agefully-muted) !important;
+}
+
+/* Injected af-pullquote styles */
+.af-body :global(.af-pullquote) {
+  margin: 3.5rem auto;
+  padding: 1rem 24px;
+  text-align: center;
+}
+.af-body :global(.af-pullquote__mark) {
+  font-family: "Fraunces", serif;
+  font-size: 64px;
+  line-height: 1;
+  color: var(--agefully-teal);
+  margin-bottom: -20px;
+  font-style: italic;
+  padding: 0;
+  max-width: none;
+}
+.af-body :global(.af-pullquote__text) {
+  font-family: "Fraunces", serif;
+  font-size: clamp(26px, 3vw, 34px);
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--agefully-teal);
+  margin: 0;
+  padding: 0;
+  max-width: none;
+}
+
+/* Image blocks injected via processContent */
+.af-body :global(.af-body-image) { margin: 3rem auto; }
+.af-body :global(.af-body-image--column) { max-width: 680px; padding: 0 24px; }
+.af-body :global(.af-body-image--wide)   { max-width: 1080px; padding: 0 24px; }
+.af-body :global(.af-body-image img) { width: 100%; height: auto; display: block; }
+.af-body :global(.af-body-image figcaption) {
+  font: var(--type-caption);
+  color: var(--agefully-muted);
+  margin-top: 0.75rem;
+  max-width: 680px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (max-width: 640px) {
+  .af-body :global(.af-newsletter__inner) { grid-template-columns: 1fr; }
+  .af-body :global(.af-body-image--column),
+  .af-body :global(.af-body-image--wide)  { padding: 0; }
+}
+
+/* ── Page template styles (non-posts) ─────────── */
+.article { padding-bottom: var(--space-xl); }
 .article__header {
   background: var(--teal);
   padding: 4rem 1.5rem 3rem;
 }
-
-.article__pillar {
-  display: inline-block;
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: rgba(249,245,242,0.65);
-  margin-bottom: 1rem;
-  text-decoration: none;
-}
-
-.article__pillar:hover {
-  color: var(--cream);
-  text-decoration: none;
-}
-
 .article__title {
   font-family: var(--font-head);
   font-size: clamp(1.75rem, 4vw, 2.75rem);
@@ -129,116 +510,49 @@ const contentClass = `article__content${isPost && featuredImage ? ' has-featured
   line-height: 1.2;
   margin-bottom: 1rem;
 }
-
-.article__meta {
-  font-size: 0.8125rem;
-  color: rgba(249,245,242,0.5);
-  font-weight: 400;
-}
-
-/* ── Featured image ───────────────────── */
-.article__feature-img {
-  margin-bottom: var(--space-md);
-}
-
-.article__feature-img img {
-  width: 100%;
-  max-height: 480px;
-  object-fit: cover;
-  border-radius: 0 0 4px 4px;
-}
-
-/* ── Body ─────────────────────────────── */
-.article__body {
-  padding-top: var(--space-md);
-}
-
-/* ── Article content typography ───────── */
+.article__body { padding-top: var(--space-md); }
 .article__content {
   font-size: 1.0625rem;
   line-height: 1.75;
   color: var(--ink);
-  text-align: left;
 }
-
 .article__content h2 {
   font-family: var(--font-head);
   font-size: 1.5rem;
   font-weight: 400;
   color: var(--teal);
   margin: 2.5rem 0 0.75rem;
-  text-align: left;
 }
-
 .article__content h3 {
   font-family: var(--font-head);
   font-size: 1.1875rem;
   font-weight: 400;
   color: var(--ink);
   margin: 2rem 0 0.5rem;
-  text-align: left;
 }
-
-.article__content p {
-  margin-bottom: 1.25rem;
-  text-align: left;
-}
-
+.article__content p  { margin-bottom: 1.25rem; }
 .article__content ul,
-.article__content ol {
-  margin: 0 0 1.25rem 1.5rem;
-}
-
-.article__content li {
-  margin-bottom: 0.4rem;
-  text-align: left;
-}
-
-.article__content a {
-  color: var(--teal);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.article__content strong {
-  font-weight: 600;
-}
-
-.article__content em {
-  font-style: italic;
-}
-
-/* ── Gutenberg block resets ───────────── */
-
-/* Clear block backgrounds — Gutenberg defaults to WordPress blue */
+.article__content ol { margin: 0 0 1.25rem 1.5rem; }
+.article__content li { margin-bottom: 0.4rem; }
+.article__content a  { color: var(--teal); text-decoration: underline; text-underline-offset: 2px; }
+.article__content strong { font-weight: 600; }
 .article__content .wp-block-group,
-.article__content .wp-block-group__inner-container,
 .article__content .wp-block-columns,
-.article__content .wp-block-column {
-  background: transparent !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
+.article__content .wp-block-column { background: transparent !important; padding-left: 0 !important; padding-right: 0 !important; }
+.article__content [class*="wp-block"][style*="background-color"] { background-color: transparent !important; }
+.article__content .has-text-align-center { text-align: left !important; }
+.article__content .wp-block-button__link,
+.article__content .wp-element-button {
+  background: var(--teal) !important;
+  color: var(--cream) !important;
+  border: none !important;
+  border-radius: 2px !important;
+  padding: 0.75rem 1.5rem !important;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none !important;
+  display: inline-block;
 }
-
-/* Override any inline background-color set by the block editor */
-.article__content [class*="wp-block"][style*="background-color"] {
-  background-color: transparent !important;
-}
-
-/* Intentionally highlighted groups: remap to brand palette */
-.article__content .wp-block-group.has-background {
-  background-color: var(--teal-muted) !important;
-  padding: 1.5rem !important;
-  border-radius: 4px;
-  margin-bottom: 1.5rem;
-}
-
-/* Clear text-align overrides Gutenberg may inject */
-.article__content .has-text-align-center {
-  text-align: left !important;
-}
-
-/* Pullquote / blockquote */
 .article__content blockquote,
 .article__content .wp-block-quote {
   border-left: 3px solid var(--teal);
@@ -247,69 +561,6 @@ const contentClass = `article__content${isPost && featuredImage ? ' has-featured
   background: var(--teal-muted);
   border-radius: 0 4px 4px 0;
 }
-
 .article__content blockquote p,
-.article__content .wp-block-quote p {
-  color: var(--ink-muted);
-  font-style: italic;
-  margin-bottom: 0;
-}
-
-/* ── Buttons ──────────────────────────── */
-.article__content .wp-block-button__link,
-.article__content .wp-element-button {
-  background: var(--teal) !important;
-  color: var(--cream) !important;
-  border: none !important;
-  border-radius: 2px !important;
-  padding: 0.75rem 1.5rem !important;
-  font-family: var(--font-body);
-  font-size: 0.875rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  text-decoration: none !important;
-  display: inline-block;
-  cursor: pointer;
-}
-
-.article__content .wp-block-button__link:hover,
-.article__content .wp-element-button:hover {
-  background: var(--teal-light) !important;
-  text-decoration: none !important;
-}
-
-/* ── Duplicate image suppression ─────── */
-/* When featured image is shown in header, hide the first image/cover
-   block in the body if it duplicates it. */
-.article__content.has-featured-header > figure:first-child,
-.article__content.has-featured-header > .wp-block-image:first-child,
-.article__content.has-featured-header > .wp-block-cover:first-child,
-.article__content.has-featured-header > .wp-block-media-text:first-child {
-  display: none;
-}
-
-/* ── Affiliate disclosure ─────────────── */
-.article__content .affiliate-disclosure,
-.article__content p:first-child em:only-child {
-  display: block;
-  font-size: 0.8125rem;
-  color: var(--ink-faint);
-  background: var(--teal-muted);
-  border-left: 2px solid var(--teal);
-  padding: 0.75rem 1rem;
-  border-radius: 0 2px 2px 0;
-  margin-bottom: 2rem;
-  font-style: normal;
-}
-
-/* ── Disclaimer sign-off ──────────────── */
-.article__content p:last-child em:only-child {
-  display: block;
-  font-size: 0.875rem;
-  color: var(--ink-faint);
-  border-top: 1px solid var(--teal-border);
-  padding-top: 1.25rem;
-  margin-top: 2rem;
-  font-style: normal;
-}
+.article__content .wp-block-quote p { color: var(--ink-muted); font-style: italic; margin-bottom: 0; }
 </style>

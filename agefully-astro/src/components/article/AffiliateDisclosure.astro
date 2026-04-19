@@ -1,0 +1,40 @@
+---
+export interface Props {
+  show: boolean;
+}
+const { show } = Astro.props;
+---
+
+{show && (
+  <div class="af-disclosure" role="note">
+    <span class="af-disclosure__label">Disclosure</span>
+    <p>Some links in this article may earn Agefully a small commission. This does not affect our recommendations or the price you pay.</p>
+  </div>
+)}
+
+<style>
+.af-disclosure {
+  max-width: 680px;
+  margin: 0 auto 2.5rem;
+  padding: 1rem 1.25rem;
+  border-left: 2px solid var(--agefully-teal);
+  background: var(--agefully-cream);
+  display: flex;
+  gap: 1rem;
+  align-items: baseline;
+}
+.af-disclosure__label {
+  font: var(--type-meta);
+  color: var(--agefully-teal);
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.af-disclosure p {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--agefully-graphite);
+  margin: 0;
+  font-family: "Source Serif 4", serif;
+}
+</style>

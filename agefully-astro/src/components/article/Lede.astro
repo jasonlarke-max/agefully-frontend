@@ -1,0 +1,26 @@
+---
+// Wrapper for the first paragraph — adds drop cap via CSS.
+// Used by injecting class af-lede onto the first <p> in processContent().
+// This file is kept for documentation / future slot-based use.
+---
+
+<style is:global>
+.af-lede {
+  font-family: "Source Serif 4", serif;
+  font-size: 21px;
+  line-height: 1.65;
+  color: var(--agefully-ink);
+  max-width: 680px;
+  margin: 0 auto 1.4em;
+  padding: 0 24px;
+}
+.af-lede::first-letter {
+  font-family: "Fraunces", serif;
+  font-weight: 500;
+  font-size: 5.2em;
+  line-height: 0.9;
+  float: left;
+  margin: 0.05em 0.08em 0 0;
+  color: var(--agefully-teal);
+}
+</style>

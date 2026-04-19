@@ -1,0 +1,99 @@
+---
+export interface ArticleRef {
+  title: string;
+  slug: string;
+  excerpt: string;
+  pillar: string;
+  image: string | null;
+}
+
+export interface Props {
+  articles: ArticleRef[];
+}
+
+const { articles } = Astro.props;
+---
+
+{articles.length > 0 && (
+  <aside class="af-related">
+    <h3 class="af-related__title">Read next</h3>
+    <div class="af-related__grid">
+      {articles.map(a => (
+        <a href={`/${a.slug}/`} class="af-related__item">
+          {a.image && (
+            <img src={a.image} alt="" class="af-related__img" loading="lazy" />
+          )}
+          <span class="af-related__pillar">{a.pillar}</span>
+          <h4 class="af-related__heading">{a.title}</h4>
+          {a.excerpt && <p class="af-related__excerpt">{a.excerpt}</p>}
+        </a>
+      ))}
+    </div>
+  </aside>
+)}
+
+<style>
+.af-related {
+  max-width: 1080px;
+  margin: 4rem auto 3rem;
+  padding: 3rem 24px 0;
+  border-top: 1px solid var(--agefully-rule);
+}
+.af-related__title {
+  font: var(--type-meta);
+  color: var(--agefully-graphite);
+  margin: 0 0 2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  font-weight: 500;
+}
+.af-related__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 2.5rem;
+}
+.af-related__item {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+.af-related__img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  margin-bottom: 1rem;
+  display: block;
+}
+.af-related__pillar {
+  font: var(--type-meta);
+  color: var(--agefully-teal);
+  display: block;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.af-related__heading {
+  font-family: "Fraunces", serif;
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--agefully-ink);
+  margin: 0 0 0.5rem;
+  padding: 0;
+  max-width: none;
+}
+.af-related__excerpt {
+  font-family: "Source Serif 4", serif;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--agefully-graphite);
+  margin: 0;
+  padding: 0;
+  max-width: none;
+}
+.af-related__item:hover .af-related__heading {
+  color: var(--agefully-teal);
+}
+</style>

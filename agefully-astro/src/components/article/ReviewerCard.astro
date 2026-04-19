@@ -1,0 +1,88 @@
+---
+export interface Props {
+  name: string;
+  credential: string;
+  bio?: string | null;
+  reviewedDate?: string | null;
+  avatar?: string | null;
+}
+
+const { name, credential, bio, reviewedDate, avatar } = Astro.props;
+---
+
+<aside class="af-reviewer">
+  <span class="af-reviewer__label">Reviewed by</span>
+  <div class="af-reviewer__body">
+    {avatar && <img src={avatar} alt={name} class="af-reviewer__avatar" />}
+    <div>
+      <p class="af-reviewer__name">{name}</p>
+      <p class="af-reviewer__cred">{credential}</p>
+      {bio && <p class="af-reviewer__bio">{bio}</p>}
+      {reviewedDate && <p class="af-reviewer__date">Reviewed {reviewedDate}</p>}
+    </div>
+  </div>
+</aside>
+
+<style>
+.af-reviewer {
+  max-width: 680px;
+  margin: 3rem auto;
+  padding: 2rem;
+  background: var(--agefully-cream);
+}
+.af-reviewer__label {
+  font: var(--type-meta);
+  color: var(--agefully-teal);
+  display: block;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.af-reviewer__body {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+.af-reviewer__avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.af-reviewer__name {
+  font-family: "Fraunces", serif;
+  font-size: 20px;
+  font-weight: 500;
+  margin: 0 0 0.25rem;
+  color: var(--agefully-ink);
+  padding: 0;
+  max-width: none;
+}
+.af-reviewer__cred {
+  font-family: "Source Serif 4", serif;
+  font-size: 15px;
+  color: var(--agefully-graphite);
+  margin: 0 0 0.75rem;
+  padding: 0;
+  max-width: none;
+}
+.af-reviewer__bio {
+  font-family: "Source Serif 4", serif;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--agefully-ink);
+  margin: 0 0 0.5rem;
+  padding: 0;
+  max-width: none;
+}
+.af-reviewer__date {
+  font: var(--type-meta);
+  color: var(--agefully-muted);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0;
+  max-width: none;
+}
+</style>

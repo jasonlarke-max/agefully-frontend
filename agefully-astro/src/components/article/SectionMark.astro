@@ -1,0 +1,25 @@
+---
+// Injected via processContent() — not rendered as a component directly.
+// This file provides the global styles that af-h2 class elements rely on.
+---
+
+<style is:global>
+.af-h2 {
+  font-family: "Fraunces", serif;
+  font-size: clamp(30px, 3vw, 38px);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.005em;
+  color: var(--agefully-ink);
+  margin: 3.5rem auto 1.5rem;
+  max-width: 680px;
+  padding: 0 24px;
+}
+.af-h2__mark {
+  display: block;
+  width: 28px;
+  height: 2px;
+  background: var(--agefully-teal);
+  margin-bottom: 1.25rem;
+}
+</style>

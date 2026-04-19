@@ -1,0 +1,58 @@
+---
+export interface Props {
+  src: string;
+  alt?: string;
+  caption?: string | null;
+  credit?: string | null;
+  variant?: 'column' | 'wide';
+}
+
+const { src, alt = '', caption, credit, variant = 'column' } = Astro.props;
+---
+
+<figure class={`af-body-image af-body-image--${variant}`}>
+  <img src={src} alt={alt} loading="lazy" />
+  {(caption || credit) && (
+    <figcaption>
+      {caption && <span>{caption}</span>}
+      {credit && <span class="af-body-image__credit">{credit}</span>}
+    </figcaption>
+  )}
+</figure>
+
+<style>
+.af-body-image {
+  margin: 3rem auto;
+}
+.af-body-image--column { max-width: 680px; padding: 0 24px; }
+.af-body-image--wide   { max-width: 1080px; padding: 0 24px; }
+.af-body-image img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.af-body-image figcaption {
+  font: var(--type-caption);
+  color: var(--agefully-muted);
+  margin-top: 0.75rem;
+  max-width: 680px;
+  margin-left: auto;
+  margin-right: auto;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.af-body-image__credit {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--agefully-muted);
+  flex-shrink: 0;
+  font-style: normal;
+}
+@media (max-width: 768px) {
+  .af-body-image--column,
+  .af-body-image--wide { padding: 0; }
+}
+</style>

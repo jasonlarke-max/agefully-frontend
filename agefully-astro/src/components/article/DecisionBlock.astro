@@ -1,0 +1,53 @@
+---
+export interface Props {
+  label?: string;
+}
+const { label = 'The decision this reduces' } = Astro.props;
+---
+
+<aside class="af-decision">
+  <span class="af-decision__label">{label}</span>
+  <div class="af-decision__body">
+    <slot />
+  </div>
+</aside>
+
+<style>
+.af-decision {
+  max-width: 680px;
+  margin: 3rem auto;
+  padding: 2rem 2rem 1.75rem;
+  background: var(--agefully-teal);
+  color: var(--agefully-cream);
+  position: relative;
+}
+.af-decision__label {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: rgba(249, 245, 242, 0.7);
+  display: block;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(249, 245, 242, 0.2);
+}
+.af-decision__body {
+  font-family: "Fraunces", serif;
+  font-size: 21px;
+  line-height: 1.45;
+  font-weight: 400;
+  color: var(--agefully-cream);
+}
+.af-decision__body :global(p:last-child) { margin-bottom: 0; }
+.af-decision__body :global(p) {
+  margin: 0 0 0.85em;
+  padding: 0;
+  max-width: none;
+  font-family: "Fraunces", serif;
+  font-size: 21px;
+  color: var(--agefully-cream);
+}
+.af-decision__body :global(strong) { color: #FFFFFF; }
+</style>

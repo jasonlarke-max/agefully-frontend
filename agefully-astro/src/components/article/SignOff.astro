@@ -1,0 +1,52 @@
+---
+export interface Props {
+  variant?: 'health' | 'financial' | 'legal';
+  customText?: string | null;
+}
+
+const { variant, customText } = Astro.props;
+
+const defaultText: Record<string, string> = {
+  health:    'This article provides general information only. Speak to your GP before making changes to your health routine or medication.',
+  financial: 'This article provides general information only and does not constitute financial advice. Speak to a regulated financial adviser before making significant financial decisions.',
+  legal:     'This article provides general information only. Speak to a solicitor for advice specific to your situation.',
+};
+
+const text = customText || (variant ? defaultText[variant] : null);
+---
+
+{text && (
+  <aside class="af-signoff">
+    <span class="af-signoff__label">Note</span>
+    <p>{text}</p>
+  </aside>
+)}
+
+<style>
+.af-signoff {
+  max-width: 680px;
+  margin: 3rem auto 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--agefully-rule);
+  display: flex;
+  gap: 1.25rem;
+  align-items: baseline;
+}
+.af-signoff__label {
+  font: var(--type-meta);
+  color: var(--agefully-graphite);
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.af-signoff p {
+  font-family: "Source Serif 4", serif;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--agefully-graphite);
+  margin: 0;
+  font-style: italic;
+  padding: 0;
+  max-width: none;
+}
+</style>
